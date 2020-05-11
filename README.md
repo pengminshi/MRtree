@@ -19,4 +19,4 @@ devtools::install_github("pengminshi/mrtree")
 ```
 
 ## Examples
-Please follow the [vignette](link) for an example of using this R package on a simulated dataset.
+Please follow the [vignette](https://htmlpreview.github.io/?https://github.com/pengminshi/MRtree/blob/master/doc/MRtree-tutorial.html) for an example of using this R package on a simulated dataset.
