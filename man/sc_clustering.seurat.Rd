@@ -2,7 +2,7 @@
 % Please edit documentation in R/sc_clustering_methods.R
 \name{sc_clustering.seurat}
 \alias{sc_clustering.seurat}
-\title{Perform Single Cell data clustering using Seurat}
+\title{Perform Single Cell data clustering using Seurat V2}
 \usage{
 sc_clustering.seurat(
   counts,
@@ -63,5 +63,5 @@ using Seurat clusters from \code{max(resolutions)}}
 }
 }
 \description{
-Perform Single Cell data clustering using Seurat
+Perform Single Cell data clustering using Seurat V2
 }

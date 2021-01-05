@@ -9,9 +9,13 @@ sc_clustering.umap_kmeans(
   Ks,
   type = c("count", "log"),
   estimate.k = FALSE,
+  subsample = F,
+  subsample.ratio = 0.9,
   scale.factor = 10000,
   n.neighbors = 30,
-  column.prefix = "umapkmeans_"
+  n.components = 2,
+  column.prefix = "umapkmeans_",
+  n.cores = parallel::detectCores() - 4
 )
 }
 \arguments{
@@ -23,13 +27,19 @@ sc_clustering.umap_kmeans(
 
 \item{estimate.k}{boolean whether to estimate optimal number of clusters by ADPclust}
 
+\item{subsample}{whether perform subsampling for each clustering}
+
+\item{subsample.ratio}{ratio of subsampled size to the total sample size (applicable when subsample=TRUE)}
+
 \item{scale.factor}{scalar sets the scale factor for cell-level normalization}
 
 \item{n.neighbors}{integer, number of neighbors to consider when build neighbor graph, default 30}
 
+\item{n.components}{integer, UMAP output dimensionality, default 2}
+
 \item{column.prefix}{string, output column prefix, default 'tsnekmeans_'}
 
-\item{dimensions}{integer, UMAP output dimensionality, default 2}
+\item{n.cores}{number of cores used for parallel computation}
 }
 \value{
 a list containing \describe{

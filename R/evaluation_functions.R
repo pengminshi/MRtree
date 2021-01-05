@@ -207,6 +207,7 @@ diff_between_similarity_mat <- function(sim.mat1, sim.mat2){
 	sum(abs(sim.mat1-sim.mat2))/n/n
 }
 
+
 # one hot code the label vector
 label_onehot <- function(labels, K=NULL){
 
@@ -235,12 +236,10 @@ label_onehot <- function(labels, K=NULL){
 }
 
 
-
 # convert phylo_tree to labelmat
 tree_to_labelmat <- function(tree, ...){
     UseMethod("tree_to_labelmat", tree)
 }
-
 
 
 tree_to_labelmat.phylo <- function(tree, Ks = NULL){
@@ -260,6 +259,7 @@ tree_to_labelmat.phylo <- function(tree, Ks = NULL){
     colnames(labelmat) = Ks
     return(labelmat)
 }
+
 
 tree_to_labelmat.hclust <- function(tree, Ks = NULL){
 
