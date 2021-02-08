@@ -3,7 +3,7 @@ title: "MRtree-tutorial"
 output: rmarkdown::html_vignette
 bibliography: bibliography.bib
 vignette: >
-  %\VignetteIndexEntry{MRtree-tutorial}
+  %\VignetteIndexEntry{MRtree-examples}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,6 +12,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   warning=FALSE, 
+  message=FALSE,
   comment = "#>"
 )
 ```
@@ -38,15 +39,16 @@ library(mrtree)
 # truek = 8; min_popsize = floor(ncells/truek)
 # i_minpop =  which(tree$tip.label=='Microglia')
 # 
-# seed = 1 # 0
+# 
+# seed =  42
 # simu.out = generateDataSymSim(ncells=ncells, ngenes=ngenes, tree=tree,
 #                               params=symsim.param.zeisel, plot.tsne=T,
 #                               i_minpop=i_minpop, min_popsize=min_popsize,
-#                               nevf=100, n_de_evf=30, sigma=0.7, seed=seed)
+#                               nevf=150, n_de_evf=40, sigma=0.9, seed=seed)
+# 
 # simu.out$tsne_UMI_counts
-# # data_example = simu.out; usethis::use_data(data_example)
 # dat = simu.out
-
+# # data_example = simu.out; usethis::use_data(data_example)
 
 data("data_example", package = 'mrtree') # load data
 dat = data_example
@@ -65,7 +67,6 @@ The main function to perform MRtree analysis is ``mrtree()``, where the data inp
 
 * ``sc_clustering.seurat``, graph clustering provided by [Seurat](https://satijalab.org/seurat/) package (@RN226)
 * ``sc_clustering.sc3``, Consensus clustering provided by [SC3](https://github.com/hemberg-lab/SC3) package (@RN33)
-* ``sc_clustering.simlr``, SIMLAR clustering provided by [SIMLR](https://github.com/BatzoglouLabSU/SIMLR) package  (@RN258)
 * ``sc_clustering.soup``, Semi-soft clustering provided in [SOUP](https://github.com/lingxuez/SOUPR) package (@RN195)
 * ``sc_clustering.tsne_kmeans``, TSNE + Kmeans clustering
 * ``sc_clustering.umap_kmeans``, UMAP + Kmeans clustering
@@ -75,9 +76,8 @@ The main function to perform MRtree analysis is ``mrtree()``, where the data inp
 As first step, multi-resolution flat clustering is conducted using Seurat with a range of resolution parameters. The results can be visualized using a cluster tree, where each layer represent one clustering, the tree nodes represent clusters, and edge exists between clusters in adjacent layers if two clusters share data points.
 
 ```{r, fig.width=7, fig.height=4}
-set.seed(1)
+set.seed(42)
 
-counts = dat$counts
 metadata = dat$metadata
 rownames(metadata) = dat$metadata$cellid
 ref.labels = dat$metadata$type
@@ -86,11 +86,11 @@ ref.labels = dat$metadata$type
 # resolutions = seq(0.1, sqrt(3), 0.05)^2
 
 # alternatively and preferrably, we provide a sampling tool to sample resolution parameters to uniformly cover different scales
-A = seurat_get_nn_graph(counts=counts, metadata=metadata, npc=10)
-resolutions = modularity_event_sampling(A=A, n.res=20, gamma.min=0.01, gamma.max=3) # sample based on the similarity matrix
+A = seurat_get_nn_graph(counts=dat$counts, metadata=metadata, npc=10)
+resolutions = modularity_event_sampling(A=A, n.res=30, gamma.min=0.01, gamma.max=2.5) # sample based on the similarity matrix
 
 # clustering using Suerat 
-seurat.out = sc_clustering.seurat(counts=counts, resolutions=resolutions, metadata=metadata, npcs=10,
+seurat.out = sc_clustering.seurat(counts=dat$counts, resolutions=resolutions, metadata=metadata, npcs=10,
                                   min.cells=0, min.features=0, scale.factor=10000, return.seurat.object=T,
                                   vars.to.regress=NULL, find.variable.features=F, verbose=F)
 
@@ -101,13 +101,13 @@ plot_clustree(labelmat=seurat.out$seurat.clusters, prefix ='RNA_snn_res.',
 
 Then we apply MRtree to ubtain the hierarchical cluster tree, visualized using a dendrogram, with a pie chart on each tree node detailing the cluster composition given the known true labels.
 
-```{r, warning=F, message=F, fig.width=7, fig.height=4}
-out = mrtree(seurat.out$obj, consensus=T, sample.weighted=F)
+```{r, warning=F, message=F, results = FALSE, fig.width=7, fig.height=4}
+out = mrtree(seurat.out$obj, consensus=F, augment.path=F)
 # if there are few partitions per k, within resolution consensus step can speed up the algorithm
 # weight per sample is encoraged if the classes are imbalanced
 
-plot_tree_with_piechart(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, draw.pie.chart=TRUE,  
-                        pie.size.offset=1, show.ref.labels = T, tip.label.dist = 10, bottom.margin=30 )
+plot_tree(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, plot.piechart = T,
+          node.size = 0.4, tip.label.dist = 10, bottom.margin=30 )
 ```
 
 We evaluate te per-resolution clustering performance with a novel index adapted from Adjusted Rand Index to accrount for te bias for resolution.
@@ -126,10 +126,8 @@ ggplot2::ggplot(data=df, aes(x=k, y=amri, color=method)) + geom_line() + theme_b
 We calcuate the similarity between the initial flat clustering and MRtree clusters across scales. Lower similarity indicates the selected clustering algorithm is not able to generate stabel clusters at the specific resolution. In this case stability drops steeply when $k>8$.
 
 ```{r, fig.width=5, fig.height=3}
-diff = get_index_per_layer(labelmat1=out$labelmat.flat, labelmat2=out$labelmat.recon, index.name='ari')
-df = aggregate(diff, by=list(k=apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))), FUN=mean)
-
-ggplot2::ggplot(data=df, aes(x=k, y=x)) + geom_line() + theme_bw() + labs(title='differece between initial clusters and MRtree')
+stab.out = stability_plot(out)
+stab.out$plot
 ```
 
 ### MRtree with SC3 clustering 
@@ -139,23 +137,22 @@ ks = 2:10
 clusterings.per.k = 1
 
 set.seed(1)
-clust.out =  sc_clustering.sc3(exprs=counts, Ks=rep(ks, each=clusterings.per.k), type = 'counts', colData=metadata,
+clust.out =  sc_clustering.sc3(exprs=dat$counts, Ks=rep(ks, each=clusterings.per.k), type = 'counts', colData=metadata,
                                 biology = F, n_cores = NULL, gene_filter = F, pct_dropout_min=-1)
 ```
 
 Plot the initial clustering reults from SC3
 ```{r, fig.width=7, fig.height=4,  show = "hide"}
-
 plot_clustree(labelmat=clust.out$sce@colData, prefix='sc3_', suffix = "_clusters",
               ref.labels = ref.labels, plot.ref = F)
 ```
 
 Run MrTree and plot the tree:
-```{r, warning=F, message=F, fig.width=7, fig.height=4}
+```{r, warning=F, message=F, results = FALSE, fig.width=7, fig.height=4}
 out = mrtree(clust.out$sce, prefix='sc3_', suffix = "_clusters", consensus=F, sample.weighted=F)
 
-plot_tree_with_piechart(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, draw.pie.chart=TRUE,  
-                        pie.size.offset=1, show.ref.labels = T, tip.label.dist = 10, bottom.margin=30 )
+plot_tree(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, plot.piechart = T,
+          node.size = 0.4, tip.label.dist = 10, bottom.margin=30 )
 ```
 
 
@@ -176,10 +173,8 @@ ggplot2::ggplot(data=df, aes(x=k, y=amri, color=method)) + geom_line() + theme_b
 We calcuate the similarity between the initial flat clustering and MRtree clusters across scales. 
 
 ```{r, fig.width=5, fig.height=3}
-diff = get_index_per_layer(labelmat1=out$labelmat.flat, labelmat2=out$labelmat.recon, index.name='ari')
-df = aggregate(diff, by=list(k=apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))), FUN=mean)
-
-ggplot2::ggplot(data=df, aes(x=k, y=x)) + geom_line() + theme_bw() + labs(title='differece between initial clusters and MRtree')
+stab.out = stability_plot(out)
+stab.out$plot
 ```
 
 

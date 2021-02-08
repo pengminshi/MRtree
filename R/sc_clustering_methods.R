@@ -150,7 +150,7 @@ sc_clustering.sc3 <- function(exprs, Ks, type = c('counts', 'normcounts'),
 
     if (build.hierarchical.tree){
         # using the results from max K in Ks
-        hc = metadata(sce)$sc3$consensus[[length(Ks)]]$hc
+        hc = sce@metadata$sc3$consensus[[length(Ks)]]$hc
         prune.out = prune_tree(hc = hc, k = max(Ks))
         hc.tree = ape::as.phylo(prune.out$hc)
         hc.tree$sample.labels = prune.out$labels

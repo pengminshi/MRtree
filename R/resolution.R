@@ -1,58 +1,3 @@
-# npc principal components for constructing the nearest neighbor graph
-seurat_get_nn_graph <- function(counts, metadata=NULL, npcs=10, ...){
-
-    min.cells = 0
-    min.features = 0
-    scale.factor = 10^4
-    find.variable.features = F
-    vars.to.regress = NULL
-    verbose = F
-
-    require(Seurat, quietly = T)
-
-    # create the seurat object
-    obj = CreateSeuratObject(counts = counts, project = "seurat object",
-                             meta.data = metadata, min.cells = min.cells,min.features = min.features)
-
-    # normalizing data
-    obj = NormalizeData(obj, normalization.method = "LogNormalize",
-                        scale.factor = scale.factor, verbose = verbose)
-
-    # get highly variable genes
-    if (find.variable.features==1){
-        obj = FindVariableFeatures(obj, selection.method = "mean.var.plot",
-                                   mean.cutoff = c(0.0125, 3),
-                                   dispersion.cutoff = c(0.5, Inf),
-                                   verbose=verbose)
-        if(verbose) message('Selected ',length( VariableFeatures(object = obj)),
-                            ' highly variable genes by mean.var.plot.')
-    } else if (find.variable.features > 1){
-        obj = FindVariableFeatures(obj, selection.method = "vst",
-                                   nfeatures=find.variable.features, verbose=verbose) # select given number of genes
-        if(verbose) message('Selected ',length(VariableFeatures(object = obj)),
-                            ' highly variable genes by mean.var.plot.')
-    } else {
-        obj = FindVariableFeatures(obj, selection.method = "vst",
-                                   nfeatures=nrow(obj), verbose=verbose) # select all the genes
-    }
-
-    # using linear model to remove the effects of covariates
-    # center and scale by gene
-    obj = ScaleData(obj, vars.to.regress=vars.to.regress, verbose=verbose)
-
-
-    obj = RunPCA(obj, features = Seurat::VariableFeatures(object = obj),
-                 npcs = npcs, verbose = verbose)
-
-    # run Seurat clustering
-    obj.cluster = FindNeighbors(obj, dims = 1:npcs, verbose=verbose)
-
-    adj = obj.cluster@graphs$RNA_snn
-
-    return (adj)
-}
-
-
 #' Event sample method for resolution parameters of modularity clustering.
 #'
 #' Sampling the resolution parameter via Event Sampling algorithm proposed in Jeub, L. G., et al. (2018). "Multiresolution consensus clustering in networks." Scientific reports 8(1): 1-16.
@@ -136,6 +81,46 @@ modularity_event_sampling <- function(A, n.res, gamma.min=NULL, gamma.max=NULL, 
     return (gammas)
 }
 
+
+#' Linear sampling.
+#'
+#' Sample resolutions parameters linearly withing a range
+#'
+#' @param n.res integer, number of resolutions to sample
+#' @param res.min scalar, lower bound
+#' @param res.max scalar, upper bound
+#'
+#' @return a vector of sampled parameters
+#' @export
+linear_sampling <- function(n.res, res.min = 0.001, res.max = 3){
+    return (seq(from=res.min, to=res.max, length.out = n.res))
+}
+
+
+#' Exponential sampling
+#'
+#' Sample resolutions in exponential scale (sparser for larger values)
+#'
+#' @param n.res integer, number of resolutions to sample
+#' @param res.min scalar, lower bound
+#' @param res.max scalar, upper bound
+#' @param base base of the exponential scale (default 2)
+#'
+#' @return a vector of sampled parameters
+#' @export
+exponential_sampling <- function(n.res, res.min = 0.001, res.max = 3, base = 2){
+    if (res.min<=0 | res.max < 0){
+        stop('Error: res.min should > 0!')
+    }
+
+    res_log = seq(from=log(res.min, base=base),
+                  to=log(res.max, base=base),
+                  length.out = n.res)
+    return (base^res_log)
+}
+
+
+
 #' pointwise division of matrices such that 0/0=0
 div_0 <- function(A, B){
 
@@ -217,5 +202,67 @@ modularity <- function(A, gamma=1){
 
     B = (A+t(A))/2 - gamma/2*(k %*% d + t(d) %*% t(k))/twom
     return (B)
+}
+
+
+
+#' get the nearest neighbor graph using Seurat
+#'
+#' @param counts ncell by ngene count matrix
+#' @param metadata a dataframe of meta data of cells
+#' @param npc principal components for constructing the nearest neighbor graph
+#'
+#' @return nearest neighbor graph saved as an adjacency matrix
+seurat_get_nn_graph <- function(counts, metadata=NULL, npcs=10, ...){
+
+    min.cells = 0
+    min.features = 0
+    scale.factor = 10^4
+    find.variable.features = F
+    vars.to.regress = NULL
+    verbose = F
+
+    require(Seurat, quietly = T)
+
+    # create the seurat object
+    obj = CreateSeuratObject(counts = counts, project = "seurat object",
+                             meta.data = metadata, min.cells = min.cells,min.features = min.features)
+
+    # normalizing data
+    obj = NormalizeData(obj, normalization.method = "LogNormalize",
+                        scale.factor = scale.factor, verbose = verbose)
+
+    # get highly variable genes
+    if (find.variable.features==1){
+        obj = FindVariableFeatures(obj, selection.method = "mean.var.plot",
+                                   mean.cutoff = c(0.0125, 3),
+                                   dispersion.cutoff = c(0.5, Inf),
+                                   verbose=verbose)
+        if(verbose) message('Selected ',length( VariableFeatures(object = obj)),
+                            ' highly variable genes by mean.var.plot.')
+    } else if (find.variable.features > 1){
+        obj = FindVariableFeatures(obj, selection.method = "vst",
+                                   nfeatures=find.variable.features, verbose=verbose) # select given number of genes
+        if(verbose) message('Selected ',length(VariableFeatures(object = obj)),
+                            ' highly variable genes by mean.var.plot.')
+    } else {
+        obj = FindVariableFeatures(obj, selection.method = "vst",
+                                   nfeatures=nrow(obj), verbose=verbose) # select all the genes
+    }
+
+    # using linear model to remove the effects of covariates
+    # center and scale by gene
+    obj = ScaleData(obj, vars.to.regress=vars.to.regress, verbose=verbose)
+
+
+    obj = RunPCA(obj, features = VariableFeatures(object = obj),
+                 npcs = npcs, verbose = verbose)
+
+    # run Seurat clustering
+    obj.cluster = FindNeighbors(obj, dims = 1:npcs, verbose=verbose)
+
+    adj = obj.cluster@graphs$RNA_snn
+
+    return (adj)
 }
 

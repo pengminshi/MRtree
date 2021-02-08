@@ -2,7 +2,7 @@
 % Please edit documentation in R/mrtree.R
 \name{prune_paths}
 \alias{prune_paths}
-\title{Remove the paths that include the same node.end but node.start different}
+\title{Remove the paths that include the same node.end but different node.start}
 \usage{
 prune_paths(paths, node.start, node.end)
 }
@@ -17,5 +17,5 @@ prune_paths(paths, node.start, node.end)
 A matrix whose rows contains the remaining paths after prunning
 }
 \description{
-Remove the paths that include the same node.end but node.start different
+Remove the paths that include the same node.end but different node.start
 }

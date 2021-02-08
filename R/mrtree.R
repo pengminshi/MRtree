@@ -37,9 +37,10 @@ mrtree <- function(x, ...) {
 #' \code{mrtree} with label saved in a matrix as input
 #' @rdname mrtree
 #' @import checkmate parallel
+#' @importFrom bnstruct knn.impute
 #' @export
 mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
-                          consensus = F, sample.weighted = F,
+                          consensus = F, sample.weighted = F, augment.path = F,
                           verbose = F, n.cores = parallel::detectCores()-1) {
     if (n.cores > parallel::detectCores()-1){
         warnings('Use ', parallel::detectCores()-1, 'cores instead!')
@@ -50,13 +51,13 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
 
     if (is.unsorted(Ks)){
         ord = order(Ks, decreasing = F)
-        labelmat = labelmat[, order(Ks)]
+        labelmat = labelmat[, ord]
         Ks = Ks[ord]
     }
 
     if (max.k != Inf){
         is.effective = Ks < max.k
-        labelmat = labelmat[,is.effective]
+        labelmat = labelmat[,is.effective, drop=F]
         Ks = Ks[is.effective]
     }
 
@@ -65,7 +66,10 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
 
     if (consensus){
         # within resolution consensus clustering
-        ccs.out = consensus_clustering_within_resolution(labelmat, ks = Ks, sample.weighted=sample.weighted, n.cores = n.cores)
+        ccs.out = consensus_clustering_within_resolution(labelmat,
+                                                         ks = Ks,
+                                                         sample.weighted=sample.weighted,
+                                                         n.cores = n.cores)
         labelmat = ccs.out$labelmat.ccs     # after consensus cluster, each layer has unique number of clusters
         labelmat.ccs = labelmat
     } else {
@@ -97,31 +101,40 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
     # initialize
     if (verbose)
         logmsg("initilize the tree ...")
+
     tree = construct_tree_from_labelmat(labelmat)  # initialize tree
     labelmat.in.paths = labelmat
     paths = unique(labelmat.in.paths)  # start from all existing paths
-
     bad.node = get_bad_nodeset(tree)
     if (verbose) {
         logmsg("initial size of bad nodes:", length(bad.node))
     }
 
-    candidate.ind = which((tree$end %in% bad.node))  # include all edges to the nodes not visited
+    candidate.ind = which(tree$end %in% bad.node)  # include all edges to the nodes not visited
     candidate = tree[candidate.ind, ]
 
-    while (nrow(candidate) >= 1) {
+    # progress bar
+    message('Run MrTree:')
+    total_bad = length(bad.node)
+    pb <- txtProgressBar(min = -total_bad-1, max =0, style = 3)
+    lowest.layer.last =  NULL
 
-        # layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
-        # lowest.layer = min(layer)
-        # ind.lowest.layer = which(layer == lowest.layer)
-        # candidate = candidate[ind.lowest.layer, ]
+
+    while (length(bad.node) > 0) {
+        # progress bar
+        setTxtProgressBar(pb, -length(bad.node))
 
         # top down-collection, lowest three layers
         layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
         layer.unique.sorted = sort(unique(layer), decreasing = F)
-        lowest.layer = layer.unique.sorted[1: min(3, length(layer.unique.sorted))] # among three lowest layers
+        lowest.layer = layer.unique.sorted[1: min(2, length(layer.unique.sorted))] # among three lowest layers
         ind.lowest.layer = which(layer %in% lowest.layer)
         candidate = candidate[ind.lowest.layer, ]
+
+        if (augment.path){
+            paths = augment_path(paths, layers = setdiff(lowest.layer, lowest.layer.last))
+            lowest.layer.last = unique(c(lowest.layer.last, lowest.layer))
+        }
 
         # calculate the cost for candidates
         candidate$cost = unlist(parallel::mclapply(1:nrow(candidate), function(i) {
@@ -164,7 +177,8 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         if (length(node.ind.affected) > 0) {
             checkmate::assert_true(nrow(labelmat.in.paths) == nrow(labelmat))
 
-            labelmat.in.paths[node.ind.affected, ] = paths[assign_samples_to_paths(labelmat = labelmat[node.ind.affected,], paths = paths), ]
+            labelmat.in.paths[node.ind.affected, ] = paths[assign_samples_to_paths(labelmat = labelmat[node.ind.affected, ,drop=F],
+                                                                                   paths = paths), , drop=F]
         }
 
         # update tree
@@ -180,12 +194,22 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
 
         candidate.ind = which((tree$end %in% bad.node))  # include all edges to the nodes not visited
         candidate = tree[candidate.ind, ]
-        paths = unique(labelmat.in.paths)  # remove the path with 0 data points assigned
+
+        if (augment.path){
+            paths = rbind(unique(labelmat.in.paths),  # remove the path with 0 data points assigned
+                          unique(paths[apply(paths[,lowest.layer, drop=F], 1, function(x) any(x == -1)),, drop=F]) # the path that has -1 in lowest layers
+            )
+            paths = unique(paths)
+        } else {
+            paths = unique(labelmat.in.paths)
+        }
 
         if (verbose) {
             logmsg("number of remaining paths is ", nrow(paths))
         }
     }
+    setTxtProgressBar(pb, -length(bad.node))
+    close(pb)
 
     if (consensus){
         # map the reconciled layers with the original layers
@@ -198,7 +222,7 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
     }
 
     unique.idx = which(!duplicated(Ks.recon[-length(Ks.recon)], MARGIN = 2)) # remove the last column in labelmat.recon
-    labelmat.tree = labelmat.recon[, unique.idx]
+    labelmat.tree = labelmat.recon[, unique.idx, drop=F]
     colnames(labelmat.tree) = paste0("K", Ks.recon[unique.idx])
 
     resolutions = colnames(labelmat.flat)
@@ -209,176 +233,11 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
                 labelmat.ccs = labelmat.ccs,
                 labelmat.imputed = labelmat.imputed,
                 resolutions = resolutions,
-                paths = paths))
+                paths = paths,
+                params = list(prefix=prefix, suffix=suffix,
+                              consensus=consensus, sample.weighted=sample.weighted, max.k=max.k)))
 }
-# mrtree.matrix <- function(labelmat, prefix=NULL, suffix=NULL,  max.k = Inf,
-#                           consensus=F, verbose = F, n.cores = parallel::detectCores()-1) {
-#     if (n.cores > parallel::detectCores()-1){
-#         warnings('Use ', parallel::detectCores()-1, 'cores instead!')
-#         n.cores = parallel::detectCores()-1
-#     }
-#
-#     Ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)]))) # number of clusters per resolution
-#
-#     if (!isSorted(Ks)){
-#         ord = order(Ks, decreasing = F)
-#         labelmat = labelmat[, order(Ks)]
-#         Ks = Ks[ord]
-#     }
-#
-#     if (max.k != Inf){
-#         is.effective = Ks < max.k
-#         labelmat = labelmat[,is.effective]
-#         Ks = Ks[is.effective]
-#     }
-#
-#     labelmat.flat = labelmat        # save the initial flat clustering results
-#     nk = length(Ks)                 # number of initial clusterings
-#
-#     if (consensus){
-#         # within resolution consensus clustering
-#         ccs.out = consensus_clustering_within_resolution(labelmat, ks = Ks, n.cores = n.cores)
-#         labelmat = ccs.out$labelmat.ccs     # after consensus cluster, each layer has unique number of clusters
-#         labelmat.ccs = labelmat
-#     } else {
-#         labelmat.ccs = NULL
-#     }
-#
-#     layer_weights = rep(1, ncol(labelmat))        # weight for layers
-#
-#     if (any(is.na(labelmat))){
-#         # if there are missing labels, input via nearest neighbor
-#         labelmat = bnstruct::knn.impute(labelmat, k=5)
-#         labelmat.imputed = labelmat
-#     } else {
-#         labelmat.imputed = NULL
-#     }
-#
-#     ###############
-#     # initialize
-#     if (verbose)
-#         logmsg("initilize the tree ...")
-#     tree = construct_tree_from_labelmat(labelmat)  # initialize tree
-#     labelmat.in.paths = labelmat
-#     paths = unique(labelmat.in.paths)  # start from all existing paths
-#
-#     bad.node = get_bad_nodeset(tree)
-#     if (verbose) {
-#         logmsg("initial size of bad nodes:", length(bad.node))
-#     }
-#
-#     candidate.ind = which((tree$end %in% bad.node))  # include all edges to the nodes not visited
-#     candidate = tree[candidate.ind, ]
-#
-#     while (nrow(candidate) >= 1) {
-#
-#         if (verbose)
-#             logmsg("\n")
-#
-#         # # top down-collection
-#         # layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
-#         # lowest.layer = min(layer)
-#         # ind.lowest.layer = which(layer == lowest.layer)
-#         # candidate = candidate[ind.lowest.layer, ]
-#
-#         # top down-collection, lowest three layers
-#         layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
-#         layer.unique.sorted = sort(unique(layer), decreasing = F)
-#         lowest.layer = layer.unique.sorted[1: min(3, length(layer.unique.sorted))] # among three lowest layers
-#         ind.lowest.layer = which(layer %in% lowest.layer)
-#         candidate = candidate[ind.lowest.layer, ]
-#
-#         # calculate the cost for candidates
-#         candidate$cost = unlist(parallel::mclapply(1:nrow(candidate), function(i) {
-#             cost(node.start = candidate$start[i], node.end = candidate$end[i], paths = paths,
-#                  labelmat = labelmat, labelmat.in.paths = labelmat.in.paths, layer_weights = layer_weights)
-#         }, mc.cores = n.cores))  #, mc.cores =  parallel::detectCores()-1)
-#
-#         # choose the edge with minimum cost
-#         ind.min = which.min(candidate$cost)
-#         if (length(ind.min) > 1) {
-#             # choose the one with max count
-#             ind.min = ind.min[which.max(candidate$count[ind.min])]
-#         }
-#         node.start = candidate$start[ind.min]
-#         node.end = candidate$en[ind.min]
-#
-#         if (verbose) {
-#             logmsg("Select edge-> start:", node.start, ", end:", node.end, ", cost:",
-#                     candidate$cost[ind.min])
-#         }
-#
-#         # remove paths that has the same end node but different start node
-#         if (verbose)
-#             logmsg("prune path ...")
-#         paths = prune_paths(paths = paths, node.start = node.start, node.end = node.end)
-#
-#         # only update the nodes that are affected
-#         if (verbose)
-#             logmsg("assign sample to the path ...")
-#         node.end.decoded = decode(node.end)
-#         node.start.decoded = decode(node.start)
-#         node.ind.affected = which(labelmat.in.paths[, node.end.decoded$layer] ==
-#                                       node.end.decoded$label & labelmat.in.paths[, node.start.decoded$layer] !=
-#                                       node.start.decoded$label)  # only the node on the eliminated paths are affected
-#
-#         if (verbose) {
-#             logmsg("length(node.ind.affected)=", length(node.ind.affected), "\n")
-#         }
-#
-#         if (length(node.ind.affected) > 0) {
-#             checkmate::assert_true(nrow(labelmat.in.paths) == nrow(labelmat))
-#
-#             labelmat.in.paths[node.ind.affected, ] = paths[assign_samples_to_paths(labelmat = labelmat[node.ind.affected,
-#                                                                                                       ], paths = paths, layer_weights = layer_weights), ]
-#         }
-#
-#         # update tree
-#         if (verbose)
-#             logmsg("update the tree ...")
-#
-#         tree = construct_tree_from_labelmat(labelmat.in.paths)
-#         bad.node = get_bad_nodeset(tree)
-#
-#         if (verbose) {
-#             logmsg("number of bad.node = ", length(bad.node))
-#         }
-#
-#         candidate.ind = which((tree$end %in% bad.node))  # include all edges to the nodes not visited
-#         candidate = tree[candidate.ind, ]
-#         paths = unique(labelmat.in.paths)  # remove the path with 0 data points assigned
-#
-#         if (verbose) {
-#             logmsg("number of remaining paths is ", nrow(paths))
-#         }
-#     }
-#
-#     if (consensus){
-#         # map the reconciled layers with the original layers
-#         labelmat.recon = labelmat.in.paths[, ccs.out$k.idx]
-#         colnames(labelmat.recon) = colnames(labelmat.flat)
-#         Ks.recon = apply(labelmat.recon, 2, function(y) length(unique(y)))
-#     } else {
-#         labelmat.recon =  labelmat.in.paths
-#         Ks.recon = apply(labelmat.recon, 2, function(y) length(unique(y)))
-#     }
-#
-#     unique.idx = which(!duplicated(Ks.recon[-length(Ks.recon)], MARGIN = 2)) # remove the last column in labelmat.recon
-#     labelmat.tree = labelmat.recon[, unique.idx]
-#     colnames(labelmat.tree) = paste0("K", Ks.recon[unique.idx])
-#
-#     resolutions = colnames(labelmat.flat)
-#
-#     return(list(labelmat.mrtree = labelmat.tree,
-#                 labelmat.recon = labelmat.recon,
-#                 labelmat.flat = labelmat.flat,
-#                 labelmat.ccs = labelmat.ccs,
-#                 labelmat.imputed = labelmat.imputed,
-#                 resolutions = resolutions,
-#                 # num.clust.flat = Ks,
-#                 # num.clust.recon = Ks.recon,
-#                 paths = paths))
-# }
+
 
 #' \code{mrtree} with labelmatrix save as a data frame as input
 #' @rdname mrtree
@@ -442,34 +301,6 @@ mrtree.Seurat <- function(x, prefix = 'RNA_snn_res.', suffix = NULL,...) {
 }
 
 
-
-#' Convert label vector to membership matrix
-#'
-#' @param labels a vector of labels from K distint classes
-#' @param labels.names (optional) alternative label names, used for naming columns of membership matrix
-#'
-#' @return an n-by-K binary membership matrix
-#' @import checkmate
-#' @export
-label_to_membership <- function(labels, label.names = NULL) {
-    if (is.null(label.names)) {
-        label.names = sort(unique(labels[!is.na(labels)]))
-    } else {
-        checkmate::assert_true(all(labels[!is.na(labels)] %in% label.names))
-    }
-
-    K = length(label.names)
-    memb = t(sapply(labels, function(lab) {
-        if (is.na(lab)){
-            rep(0, K) # if label missing then return 0 row
-        } else {
-            as.numeric(label.names == lab)
-        }
-    } ))
-    return(matrix(memb, ncol=K))
-}
-
-
 #' Construct the cluster tree from multi-resolution clustering save as a label matrix
 #'
 #' @param labelmat sample by m label matrix, each columns represents a clustering for a certain resolution
@@ -498,6 +329,44 @@ construct_tree_from_labelmat <- function(labelmat) {
     }
 
     return(tree)
+}
+
+#' Augment the path to include on additional node as alternative to each layer
+augment_path <- function(paths, layers, aug.name=-1){
+
+    if (length(layers)==0){
+        return (paths)
+    }
+
+    nb.layers = ncol(paths)
+    nb.paths = nrow(paths)
+
+    paths.augmented = NULL
+    for (layer in layers){
+        if (layer != nb.layers & !(aug.name %in% paths[,layer])){
+            if (layer == 1){
+                aug_ind2 = apply(paths[,2:nb.layers, drop=F], 1, function(x) any(x==-1))
+                paths2 = paths[!aug_ind2, 2:nb.layers, drop=F]
+
+                paths.augmented = rbind(path_dot_product(paths1=matrix(aug.name, nrow=1, ncol=1),
+                                                         paths2=paths2),
+                                        paths.augmented)
+            } else{
+                aug_ind1 = apply(paths[,1:(layer-1), drop=F], 1,  function(x) any(x==-1))
+                aug_ind2 = apply(paths[,(layer+1):nb.layers,drop=F], 1, function(x) any(x==-1))
+
+                paths1 = cbind(paths[!aug_ind1,1:(layer-1), drop=F],
+                               rep(aug.name, sum(!aug_ind1)))
+                paths2 = paths[!aug_ind2, (layer+1):nb.layers,drop=F]
+
+                paths.augmented = rbind(path_dot_product(paths1=paths1, paths2=paths2),
+                                        paths.augmented)
+            }
+        }
+    }
+    paths = unique(rbind(paths, paths.augmented))
+
+    return(paths)
 }
 
 
@@ -574,7 +443,7 @@ decode <- function(node.name) {
 }
 
 
-#' Remove the paths that include the same node.end but node.start different
+#' Remove the paths that include the same node.end but different node.start
 #'
 #' @param paths Initial paths to be pruned
 #' @param node.start the label of the starting node
@@ -588,46 +457,35 @@ prune_paths <- function(paths, node.start, node.end) {
 
     is.conflict = (paths[, node.start.decoded$layer] != node.start.decoded$label) &
         (paths[, node.end.decoded$layer] == node.end.decoded$label)
-    num_conflict = sum(is.conflict)
 
-    if (num_conflict > 0) {
-
+    if (sum(is.conflict) > 0 & node.end.decoded$layer < ncol(paths)){
+        is.selected = (paths[, node.start.decoded$layer] == node.start.decoded$label) &
+            (paths[, node.end.decoded$layer] == node.end.decoded$label)
+        paths.to.remove.modified = path_dot_product(paths1=paths[is.selected, 1:node.end.decoded$layer, drop=F],
+                                                    paths2=paths[is.conflict, (1+node.end.decoded$layer):ncol(paths), drop=F])
+    } else {
         paths.to.remove.modified = NULL
-
-        if (node.start.decoded$layer == 1) {
-            # these are the path with different 'from' node but same 'to'
-            paths.to.remove = matrix(paths[is.conflict, ], nrow = num_conflict)
-
-            # modify these path to have the same from as the selected one
-            paths.to.remove.modified = paths.to.remove
-            paths.to.remove.modified[, node.start.decoded$layer] = node.start.decoded$label
-            paths.to.remove.modified = unique(paths.to.remove.modified)
-
-        } else {
-            is.selected = (paths[, node.start.decoded$layer] == node.start.decoded$label) &
-                (paths[, node.end.decoded$layer] == node.end.decoded$label)
-
-            path.selected = matrix(paths[is.selected, ], nrow = sum(is.selected))  # path selected, a vector
-
-            # these are the path with different 'from' node but same 'to'
-            paths.to.remove = matrix(paths[is.conflict, ], nrow = num_conflict)
-            have.common.parent = paths.to.remove[, node.start.decoded$layer - 1] %in%
-                path.selected[, node.start.decoded$layer - 1]
-
-            if (sum(have.common.parent) > 0) {
-                paths.to.remove.modified = matrix(paths.to.remove[have.common.parent,
-                                                                  ], nrow = sum(have.common.parent))
-                paths.to.remove.modified[, node.start.decoded$layer] = node.start.decoded$label
-                paths.to.remove.modified = unique(paths.to.remove.modified)
-
-            }
-        }
     }
 
-    paths = paths[!is.conflict, ]
-    paths = rbind(paths, paths.to.remove.modified)
+    paths = unique(rbind(paths[!is.conflict, ], paths.to.remove.modified))
 
     return(paths)
+}
+
+#' outer product of path prefix and suffix
+path_dot_product <- function(paths1, paths2){
+    paths1 = unique(paths1)
+    paths2 = unique(paths2)
+
+    nb.paths1 = nrow(paths1)
+    nb.paths2 = nrow(paths2)
+
+    if (nb.paths1 ==0 | nb.paths2==0){
+        return(NULL)
+    }
+    path.product = cbind(paths1[rep(1:nb.paths1, nb.paths2), , drop=F],
+                         paths2[rep(1:nb.paths2, each=nb.paths1), , drop=F])
+    return(path.product)
 }
 
 
@@ -642,16 +500,7 @@ prune_paths <- function(paths, node.start, node.end) {
 #' @export
 assign_samples_to_paths <- function(labelmat, paths, n.cores=parallel::detectCores() - 1) {
 
-    if (class(labelmat) != "matrix") {
-        labelmat = matrix(labelmat, nrow = 1)
-    }
-
-    if (class(paths) != "matrix") {
-        paths = matrix(paths, nrow = 1)
-    }
-
     n.layers = ncol(paths)
-
     paths = t(paths)
 
     path.labels = apply(labelmat, 1, function(label){
@@ -661,15 +510,6 @@ assign_samples_to_paths <- function(labelmat, paths, n.cores=parallel::detectCor
         }
         return(min.ind)
     })
-
-    # path.labels = unlist(parallel::mclapply(1:nrow(labelmat), function(i) {
-    #     label = labelmat[i, ]
-    #     min.ind = which.min(colSums((abs(paths - label) > 0)))
-    #     if (length(min.ind) > 1) {
-    #         min.ind = sample(min.ind, 1)
-    #     }
-    #     min.ind
-    # }, mc.cores = n.cores))
 
     return(path.labels)
 }
@@ -699,6 +539,7 @@ get_bad_nodeset <- function(tree) {
 #' \item{labelmat.ccs}{consensus clustering results saved in a label matrix}
 #' \item{k.idx}{idx mapping the original columns to the new columns}
 #' }
+#' @import parallel
 #' @export
 consensus_clustering_within_resolution <- function(labelmat, ks=NULL, sample.weighted=F, n.cores = NULL){
     if (is.null(ks)){
@@ -738,6 +579,7 @@ consensus_clustering_within_resolution <- function(labelmat, ks=NULL, sample.wei
 #'
 #' @return consensus clustering result saved as a label vector (NA is labels missing for all clusterings)
 #'
+#' @import RSpectra
 #' @export
 consensus_clustering <- function(labelmat, k=NULL){
     m = ncol(labelmat)
@@ -790,7 +632,7 @@ consensus_clustering <- function(labelmat, k=NULL){
 #' @param k number of clusters for the final consensus clustering
 #'
 #' @return consensus clustering result saved as a label vector (NA is labels missing for all clusterings)
-#'
+#' @import RSpectra
 #' @export
 consensus_clustering_weighted <- function(labelmat, k=NULL){
     m = ncol(labelmat)

@@ -2,13 +2,20 @@
 
 R package for MRtree.
 
-MRtree for Multi-resolution Reconciled tree, is a post clustering procedure to build cluster hierarchy based on flat clustering obtained for multi-resolutions. The tools is developed for single cell RNAseq clustering analysis to identify sub-cell types. It can be coupled with many popular clustering tools such as Seurat and SC3. 
+MRtree for Multi-resolution Reconciled tree, is a post clustering procedure to build cluster hierarchy based on flat clustering obtained for multi-resolutions. The tools is developed for single cell RNAseq clustering analysis to identify sub-cell types. It can be coupled with many popular clustering tools such as Seurat. 
 
 
 ## Citation
 
-Draft in preparation ...
-
+```
+@article{peng2020cfit,
+  title={Cell Type Hierarchy Reconstruction via Reconciliation of Multi-resolution Cluster Tree},
+  author={Minshi Peng, Brie Wamsley, Andrew G Elkins, Daniel M Geschwind, Yuting Wei and Kathryn Roeder},
+  journal={bioRxiv},
+  year={2021},
+  doi={10.1101/430067}
+}
+```
 
 
 ## Installation
@@ -19,4 +26,4 @@ devtools::install_github("pengminshi/mrtree")
 ```
 
 ## Examples
-Please follow the [vignette](https://htmlpreview.github.io/?https://github.com/pengminshi/MRtree/blob/master/doc/MRtree-tutorial.html) for an example of using this R package on a simulated dataset.
+Please follow the [vignette](https://htmlpreview.github.io/?https://github.com/pengminshi/MRtree/blob/master/vignettes/MRtree-tutorial.html) for an example of using this R package on a simulated dataset.

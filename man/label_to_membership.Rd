@@ -5,8 +5,6 @@
 \title{Convert label vector to membership matrix}
 \usage{
 label_to_membership(labels, label.names = NULL)
-
-label_to_membership(labels, label.names = NULL)
 }
 \arguments{
 \item{labels}{a vector of labels from K distint classes}
@@ -15,11 +13,7 @@ label_to_membership(labels, label.names = NULL)
 }
 \value{
 an n-by-K binary membership matrix
-
-an n-by-K binary membership matrix
 }
 \description{
-Convert label vector to membership matrix
-
 Convert label vector to membership matrix
 }

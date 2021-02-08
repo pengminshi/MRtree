@@ -1,6 +1,3 @@
-########################################################
-# AMRI Adjusted Multiresolution Rand Index
-########################################################
 #' Adjusted Multi-resolution Rand Index between two clusterings
 #'
 #' Given two partitions on the save n data points, AMRI is used to evaluate the similarity between two
@@ -49,9 +46,13 @@ AMRI <- function(labels1, labels2){
     return(list(mri=mri, amri=amri))
 }
 
-# get the size of set D
-# D={pairs that are in different clusters in low resolution clustering but in the
-#    same cluster in high resolution clustering}
+#' get the size of set D, {pairs that are in different clusters in low resolution clustering but in the
+#'    same cluster in high resolution clustering}
+#'
+#' @param labels.low.resolution vector of labels at lower resolution
+#' @param labels.high.resolution vector of labels at higher resolution
+#'
+#' @return a scalar of size of set D
 get_set_D_size <- function(labels.low.resolution, labels.high.resolution){
 
     class.low = unique(labels.low.resolution) # need to filter out outliers?
@@ -79,7 +80,12 @@ get_set_D_size <- function(labels.low.resolution, labels.high.resolution){
     return(size)
 }
 
-# expected MRI under random permutation model
+#' expected Multi-resolution Rand Index (MRI) under random permutation model
+#'
+#' @param labels1 first label vector used for calculating the MRI
+#' @param labels2 second label vector used for calculating the MRI
+#'
+#' @return scalar of expected MRI
 expected_MRI_perm <- function(labels1, labels2){
 
     count.per.cluster1 = table(labels1)
@@ -108,9 +114,32 @@ expected_MRI_perm <- function(labels1, labels2){
 }
 
 
-########################################################
-# calculate per layer accuracy
-########################################################
+
+#' Stability analysis that measures the similarity between the initial flat clusterins and reconciled tree
+#' at each resolution. Similarity can be ARI or AMRI
+#'
+#' A line plot is generated showing the similarity across resolutions, measuring the clustering stability
+#' for each resolution
+#'
+#' @param out MRtree output, list containing the labelmat.mrtree and labelmat.flat
+#' @param index.name string, measurement of similarity, that can be 'ari' or 'amri'
+#'
+#' @return a dataframe showing the similarity per resolution
+#' @import ggplot2
+stability_plot <- function(out, index.name='ari'){
+    if (!index.name %in% c('ari', 'amri')){
+        stop("Index can only be 'ari' or 'amri'")
+    }
+    diff = get_index_per_layer(labelmat1=out$labelmat.flat, labelmat2=out$labelmat.recon, index.name=index.name)
+    df = aggregate(diff, by=list(k=apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))), FUN=mean)
+
+    p = ggplot2::ggplot(data=df, aes(x=k, y=x)) + geom_line() + theme_bw() +
+        labs(x='resolutions (K)',
+             y=paste0(toupper(index.name), ' between flat clusterings and MRtree'))
+    colnames(df) = c('resolution',index.name)
+
+    return(list(df=df, plot = p))
+}
 
 #' Calculate the similarity between each layer of initial cluster tree and find MRTree results
 #'
@@ -120,6 +149,7 @@ expected_MRI_perm <- function(labels1, labels2){
 #' 'ami','amri')
 #'
 #' @return a numeric vector of length m, index per layer
+#' @import checkmate
 #' @export
 get_index_per_layer <- function(labelmat1, labelmat2, index.name='ari'){
 
@@ -141,9 +171,17 @@ get_index_per_layer <- function(labelmat1, labelmat2, index.name='ari'){
     return(out)
 }
 
+
+#' repeat the vector as a matrix
+#'
+#' @param x input vector to repeat
+#' @param k number of time to repeat
+#'
+#' @return a matrix of k columns
 rep_mat <- function(x, k){
     matrix(rep(x, k), ncol = k, byrow = F)
 }
+
 
 #' Calculate the index between two clusterings
 #'
@@ -154,7 +192,7 @@ rep_mat <- function(x, k){
 #'
 #' @return a scalar, calculated index value
 #'
-#' @importFrom aricode ARI
+#' @importFrom aricode ARI AMI
 #' @export
 get_index <- function(labels1, labels2, index.name=c('ari','hamming','ami','amri')){
 
@@ -176,10 +214,19 @@ get_index <- function(labels1, labels2, index.name=c('ari','hamming','ami','amri
 # Compare the similarity between two trees
 ########################################################
 
-# calculate the similarity matrix from a phylo tree and sample labels
+#' Calculate the pairwise similarity matrix between samples, from sample labels
+#' and a phylo tree of labels.
+#'
+#' @param tree a phylo object giving the tree structure of labels
+#' @param labels a label vector for n samples
+#'
+#' @return a n-by-n similarity matrix showing the similarity between samples
+#' given the labels and the tree structure of labels
+#' @importFrom ape cophenetic.phylo
+#' @import checkmate
 get_similarity_from_tree <- function(tree, labels){
 	# check the labels are in the tree tip
-	assertthat::assert_that(all(labels %in% tree$tip.label))
+    checkmate::assertTRUE(all(labels %in% tree$tip.label))
 
 	labels.onehot = label_onehot(labels)
 	class.dist.mat = ape::cophenetic.phylo(tree)[colnames(labels.onehot), colnames(labels.onehot)]
@@ -191,7 +238,11 @@ get_similarity_from_tree <- function(tree, labels){
 }
 
 
-#
+#' Get sample pairwise similarity matrix from the label matrix
+#'
+#' @param labelmat a n-by-m labelmatrix, n samples, and m clusterings one per column
+#' @return a n-by-n similarity matrix
+#' @importFrom e1071 hamming.distance
 get_similarity_from_labelmat <- function(labelmat){
 
 	d = e1071::hamming.distance(labelmat)
@@ -200,15 +251,28 @@ get_similarity_from_labelmat <- function(labelmat){
 	return(sim.mat)
 }
 
-
-# get the diff of two trees, which are represented with the similarity matrices
+#' Calculate the L1 distance between two similarity matrix.
+#' Get the diff of two trees, which are represented with the similarity matrices
+#'
+#' @param sim.mat1 first similarity matrix
+#' @param sim.mat2 second similarity matrix
+#'
+#' @return
 diff_between_similarity_mat <- function(sim.mat1, sim.mat2){
 	n = nrow(sim.mat1)
-	sum(abs(sim.mat1-sim.mat2))/n/n
+	diff = sum(abs(sim.mat1-sim.mat2))/n/n
+
+	return (diff)
 }
 
 
-# one hot code the label vector
+#' one-hot code the label vector
+#'
+#' @param labels a vector of labels
+#' @param K number of different categories, by default is the number of unique labels
+#'
+#' @return a n-by-K one-hot encoded binary matrix
+#' @import checkmate
 label_onehot <- function(labels, K=NULL){
 
 	types = unique(labels)
@@ -217,7 +281,7 @@ label_onehot <- function(labels, K=NULL){
 	if(is.null(K)){
 		K = length(types)
 	} else {
-		assertthat::assert_that(n.types <= K)
+	    checkmate::assertTRUE(n.types <= K)
 	}
 
 	n = length(labels)
@@ -230,18 +294,25 @@ label_onehot <- function(labels, K=NULL){
 
 	colnames(memb)[1:n.types] = types
 
-	assertthat::assert_that(all(rowSums(memb)==1))
-
 	return(memb)
 }
 
 
-# convert phylo_tree to labelmat
+#' Convert phylo_tree to label matrix
+#'
+#' @param tree phylo object or hclust object
 tree_to_labelmat <- function(tree, ...){
     UseMethod("tree_to_labelmat", tree)
 }
 
 
+#' Convert phylo tree to labelmatrix
+#'
+#' @param tree phylo tree
+#'
+#' @return a label matrix
+#' @importFrom ape Ntip
+#' @importFrom dendextend cutree
 tree_to_labelmat.phylo <- function(tree, Ks = NULL){
 
     if(is.null(Ks)){
@@ -260,7 +331,12 @@ tree_to_labelmat.phylo <- function(tree, Ks = NULL){
     return(labelmat)
 }
 
-
+#' Convert hclust tree to label matrix
+#'
+#' @param tree hclust object representing a dendrogram
+#'
+#' @return a label matrix
+#' @importFrom dendextend cutree
 tree_to_labelmat.hclust <- function(tree, Ks = NULL){
 
     if(is.null(Ks)){

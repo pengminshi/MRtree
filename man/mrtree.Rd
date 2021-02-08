@@ -17,6 +17,7 @@ mrtree(x, ...)
   max.k = Inf,
   consensus = F,
   sample.weighted = F,
+  augment.path = F,
   verbose = F,
   n.cores = parallel::detectCores() - 1
 )

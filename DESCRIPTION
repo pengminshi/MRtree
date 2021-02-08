@@ -1,5 +1,5 @@
 Package: mrtree
-Title: What the Package Does (One Line, Title Case)
+Title: Multi-resolution Reconciled Tree
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Minshi",
@@ -7,9 +7,8 @@ Authors@R:
            role = c("aut", "cre"),
            email = "minship@andrew.cmu.edu",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+Description: Build hierarchical cluster tree by reconciling the flat clustering at multiple scales.
+License: `use_mit_license()`
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
