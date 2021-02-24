@@ -27,5 +27,5 @@ modularity_event_sampling(
 a vector of length \code{n.res}, sampled resolution parameters.
 }
 \description{
-Sampling the resolution parameter via Event Sampling algorithm proposed in Jeub, L. G., et al. (2018). "Multiresolution consensus clustering in networks." Scientific reports 8(1): 1-16.
+Sampling the resolution parameter via Event Sampling algorithm proposed in Jeub, L. G., et al. (2018). 'Multiresolution consensus clustering in networks.' Scientific reports 8(1): 1-16.
 }

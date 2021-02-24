@@ -2,7 +2,7 @@
 % Please edit documentation in R/sc_clustering_methods.R
 \name{prune_tree}
 \alias{prune_tree}
-\title{prune the dendrogram to have the specified number of clusters}
+\title{Prune the dendrogram to have the specified number of clusters}
 \usage{
 prune_tree(hc, k)
 }
@@ -19,5 +19,5 @@ tree cut}
 }
 }
 \description{
-prune the dendrogram to have the specified number of clusters
+Prune the dendrogram to have the specified number of clusters
 }

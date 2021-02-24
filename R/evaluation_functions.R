@@ -15,7 +15,7 @@
 #' @import checkmate
 #'
 #' @export
-AMRI <- function(labels1, labels2){
+AMRI <- function(labels1, labels2) {
 
     checkmate::assertTRUE(length(labels1) == length(labels2))
 
@@ -27,23 +27,23 @@ AMRI <- function(labels1, labels2){
     k1 = length(unique(labels1))
     k2 = length(unique(labels2))
 
-    if (k1<k2){
-        diff.size = get_set_D_size(labels.low.resolution=labels1, labels.high.resolution=labels2)
-    } else if (k1>k2){
-        diff.size  =get_set_D_size(labels.low.resolution=labels2, labels.high.resolution=labels1)
+    if (k1 < k2) {
+        diff.size = get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2)
+    } else if (k1 > k2) {
+        diff.size = get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1)
     } else {
         # k1=k2
-        diff.size = (get_set_D_size(labels.low.resolution=labels1, labels.high.resolution=labels2)+
-            get_set_D_size(labels.low.resolution=labels2, labels.high.resolution=labels1))/2
+        diff.size = (get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2) +
+            get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1))/2
     }
-    mri = 1 -  diff.size/n/(n-1)* 2
+    mri = 1 - diff.size/n/(n - 1) * 2
 
     # adjust for chance under permuation model
-    expected.mri = expected_MRI_perm(labels1=labels1, labels2=labels2)
+    expected.mri = expected_MRI_perm(labels1 = labels1, labels2 = labels2)
 
-    amri = (mri-expected.mri) / (1-expected.mri)
+    amri = (mri - expected.mri)/(1 - expected.mri)
 
-    return(list(mri=mri, amri=amri))
+    return(list(mri = mri, amri = amri))
 }
 
 #' get the size of set D, {pairs that are in different clusters in low resolution clustering but in the
@@ -53,26 +53,27 @@ AMRI <- function(labels1, labels2){
 #' @param labels.high.resolution vector of labels at higher resolution
 #'
 #' @return a scalar of size of set D
-get_set_D_size <- function(labels.low.resolution, labels.high.resolution){
+get_set_D_size <- function(labels.low.resolution, labels.high.resolution) {
 
-    class.low = unique(labels.low.resolution) # need to filter out outliers?
+    class.low = unique(labels.low.resolution)  # need to filter out outliers?
     k.low = length(class.low)
     size = 0
 
-    if ( k.low == 1){
+    if (k.low == 1) {
         return(size)
     }
 
-    for (k1 in 1:(k.low-1)){
-        for (k2 in (k1+1):k.low){
+    for (k1 in 1:(k.low - 1)) {
+        for (k2 in (k1 + 1):k.low) {
             # cat('k1=',k1,', k2=',k2,'\n')
-            ind1 = which(labels.low.resolution==class.low[k1])
-            ind2 = which(labels.low.resolution==class.low[k2])
+            ind1 = which(labels.low.resolution == class.low[k1])
+            ind2 = which(labels.low.resolution == class.low[k2])
             ind = c(ind1, ind2)
 
-            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by=list(labels.low.resolution[ind]), FUN=table)
-            if (length(agg.out$Group.1) > 1){
-                size = size + sum(apply(matrix(c(agg.out[,-1]), nrow=2), 2, prod))
+            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by = list(labels.low.resolution[ind]),
+                FUN = table)
+            if (length(agg.out$Group.1) > 1) {
+                size = size + sum(apply(matrix(c(agg.out[, -1]), nrow = 2), 2, prod))
             }
         }
     }
@@ -86,7 +87,7 @@ get_set_D_size <- function(labels.low.resolution, labels.high.resolution){
 #' @param labels2 second label vector used for calculating the MRI
 #'
 #' @return scalar of expected MRI
-expected_MRI_perm <- function(labels1, labels2){
+expected_MRI_perm <- function(labels1, labels2) {
 
     count.per.cluster1 = table(labels1)
     count.per.cluster2 = table(labels2)
@@ -95,17 +96,20 @@ expected_MRI_perm <- function(labels1, labels2){
     k1 = length(unique(labels1))
     k2 = length(unique(labels2))
 
-    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x*(x-1)/2)) /n/(n-1)*2
-    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x*(x-1)/2)) /n/(n-1)*2
+    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x *
+        (x - 1)/2))/n/(n - 1) * 2
+    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x *
+        (x - 1)/2))/n/(n - 1) * 2
 
 
-    if (k1<k2){
-        diff.prob = (1-prob.pairs.in.same.cluster1)*prob.pairs.in.same.cluster2
-    } else if (k1>k2){
-        diff.prob = prob.pairs.in.same.cluster1 * (1-prob.pairs.in.same.cluster2)
-    } else { # k1==k2
-        diff.prob =  ((1-prob.pairs.in.same.cluster1)*prob.pairs.in.same.cluster2+
-            prob.pairs.in.same.cluster1 * (1-prob.pairs.in.same.cluster2))/2
+    if (k1 < k2) {
+        diff.prob = (1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2
+    } else if (k1 > k2) {
+        diff.prob = prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2)
+    } else {
+        # k1==k2
+        diff.prob = ((1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2 +
+            prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2))/2
     }
 
     expected.mri = 1 - diff.prob
@@ -126,19 +130,21 @@ expected_MRI_perm <- function(labels1, labels2){
 #'
 #' @return a dataframe showing the similarity per resolution
 #' @import ggplot2
-stability_plot <- function(out, index.name='ari'){
-    if (!index.name %in% c('ari', 'amri')){
+#' @export
+stability_plot <- function(out, index.name = "ari") {
+    if (!index.name %in% c("ari", "amri")) {
         stop("Index can only be 'ari' or 'amri'")
     }
-    diff = get_index_per_layer(labelmat1=out$labelmat.flat, labelmat2=out$labelmat.recon, index.name=index.name)
-    df = aggregate(diff, by=list(k=apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))), FUN=mean)
+    diff = get_index_per_layer(labelmat1 = out$labelmat.flat, labelmat2 = out$labelmat.recon,
+        index.name = index.name)
+    df = aggregate(diff, by = list(k = apply(out$labelmat.flat, 2, FUN = function(x) length(unique(x)))),
+        FUN = mean)
 
-    p = ggplot2::ggplot(data=df, aes(x=k, y=x)) + geom_line() + theme_bw() +
-        labs(x='resolutions (K)',
-             y=paste0(toupper(index.name), ' between flat clusterings and MRtree'))
-    colnames(df) = c('resolution',index.name)
+    p = ggplot2::ggplot(data = df, aes(x = k, y = x)) + geom_line() + theme_bw() +
+        labs(x = "resolutions (K)", y = paste0(toupper(index.name), " between flat clusterings and MRtree"))
+    colnames(df) = c("resolution", index.name)
 
-    return(list(df=df, plot = p))
+    return(list(df = df, plot = p))
 }
 
 #' Calculate the similarity between each layer of initial cluster tree and find MRTree results
@@ -151,21 +157,21 @@ stability_plot <- function(out, index.name='ari'){
 #' @return a numeric vector of length m, index per layer
 #' @import checkmate
 #' @export
-get_index_per_layer <- function(labelmat1, labelmat2, index.name='ari'){
+get_index_per_layer <- function(labelmat1, labelmat2, index.name = "ari") {
 
-    if (!is.matrix(labelmat1) & (is.matrix(labelmat2))){
+    if (!is.matrix(labelmat1) & (is.matrix(labelmat2))) {
         labelmat1 = rep_mat(labelmat1, ncol(labelmat2))
-    } else if (!is.matrix(labelmat2) & (is.matrix(labelmat1))){
+    } else if (!is.matrix(labelmat2) & (is.matrix(labelmat1))) {
         labelmat2 = rep_mat(labelmat2, ncol(labelmat1))
-    } else if (!is.matrix(labelmat1) & !is.matrix(labelmat2)){
-        labelmat1 = matrix(labelmat1, ncol=1)
-        labelmat2 = matrix(labelmat2, ncol=1)
+    } else if (!is.matrix(labelmat1) & !is.matrix(labelmat2)) {
+        labelmat1 = matrix(labelmat1, ncol = 1)
+        labelmat2 = matrix(labelmat2, ncol = 1)
     }
 
-    checkmate::assertTRUE(ncol(labelmat1)==ncol(labelmat2))
+    checkmate::assertTRUE(ncol(labelmat1) == ncol(labelmat2))
 
-    out = sapply(1:ncol(labelmat1), function(i){
-        get_index(labels1=labelmat1[,i], labels2=labelmat2[,i], index.name = index.name)
+    out = sapply(1:ncol(labelmat1), function(i) {
+        get_index(labels1 = labelmat1[, i], labels2 = labelmat2[, i], index.name = index.name)
     })
 
     return(out)
@@ -178,7 +184,7 @@ get_index_per_layer <- function(labelmat1, labelmat2, index.name='ari'){
 #' @param k number of time to repeat
 #'
 #' @return a matrix of k columns
-rep_mat <- function(x, k){
+rep_mat <- function(x, k) {
     matrix(rep(x, k), ncol = k, byrow = F)
 }
 
@@ -192,27 +198,82 @@ rep_mat <- function(x, k){
 #'
 #' @return a scalar, calculated index value
 #'
-#' @importFrom aricode ARI AMI
 #' @export
-get_index <- function(labels1, labels2, index.name=c('ari','hamming','ami','amri')){
+get_index <- function(labels1, labels2, index.name = c("ari", "hamming", "ami", "amri")) {
 
     index.name = match.arg(index.name)
 
-    if( index.name =='hamming'){
-        sum(abels1 != labels2)
-    } else if (index.name == 'ari'){
-        aricode::ARI(labels1, labels2)
-    } else if (index.name == 'ami'){
-        aricode::AMI(labels1, labels2)
-    } else if (index.name == 'amri'){
-        AMRI(labels1=labels1, labels2=labels2)$amri
+    if (index.name == "hamming") {
+        hamming.distance(abels1, labels2)
+    } else if (index.name == "ari") {
+        adjustedRandIndex(labels1, labels2)
+    } else if (index.name == "amri") {
+        AMRI(labels1 = labels1, labels2 = labels2)$amri
     }
 }
 
 
-########################################################
-# Compare the similarity between two trees
-########################################################
+
+#' Adjusted Rand Index
+#'
+#' A function to compute the adjusted rand index between two classifications.
+#'
+#' @param x a vector containing the labels of the first classification. Must be a vector of characters, integers, numerics, or a factor, but not a list.
+#' @param y a vector containing the labels of the second classification.
+#' @return a scalar with the adjusted rand index.
+#' @export
+adjustedRandIndex <- function(x, y) {
+    x <- as.vector(x)
+    y <- as.vector(y)
+
+    if (length(x) != length(y))
+        stop("arguments must be vectors of the same length")
+
+    tab <- table(x, y)
+
+    if (all(dim(tab) == c(1, 1)))
+        return(1)
+
+    a <- sum(choose(tab, 2))
+    b <- sum(choose(rowSums(tab), 2)) - a
+    c <- sum(choose(colSums(tab), 2)) - a
+    d <- choose(sum(tab), 2) - a - b - c
+
+    ARI <- (a - (a + b) * (a + c)/(a + b + c + d))/((a + b + a + c)/2 - (a + b) *
+        (a + c)/(a + b + c + d))
+
+    return(ARI)
+}
+
+
+#' Hamming Distances of Vectors
+#'
+#' f both x and y are vectors, hamming.distance returns the Hamming distance (number of different elements) between this two vectors. If x is a matrix, the Hamming distances between the rows of x are computed and y is ignored.
+#'
+#' @param x a vector or matrix.
+#' @param y an optional vector.
+#'
+#' @return distance matrix
+hamming.distance <- function(x, y) {
+
+    z <- NULL
+
+    if (is.vector(x) && is.vector(y)) {
+        z <- sum(x != y)
+    } else {
+        z <- matrix(0, nrow = nrow(x), ncol = nrow(x))
+        for (k in 1:(nrow(x) - 1)) {
+            for (l in (k + 1):nrow(x)) {
+                z[k, l] <- hamming.distance(x[k, ], x[l, ])
+                z[l, k] <- z[k, l]
+            }
+        }
+        dimnames(z) <- list(dimnames(x)[[1]], dimnames(x)[[1]])
+    }
+    z
+}
+
+
 
 #' Calculate the pairwise similarity matrix between samples, from sample labels
 #' and a phylo tree of labels.
@@ -224,17 +285,17 @@ get_index <- function(labels1, labels2, index.name=c('ari','hamming','ami','amri
 #' given the labels and the tree structure of labels
 #' @importFrom ape cophenetic.phylo
 #' @import checkmate
-get_similarity_from_tree <- function(tree, labels){
-	# check the labels are in the tree tip
+get_similarity_from_tree <- function(tree, labels) {
+    # check the labels are in the tree tip
     checkmate::assertTRUE(all(labels %in% tree$tip.label))
 
-	labels.onehot = label_onehot(labels)
-	class.dist.mat = ape::cophenetic.phylo(tree)[colnames(labels.onehot), colnames(labels.onehot)]
-	class.sim.mat = 1 - class.dist.mat/max(class.dist.mat) # range [0,1]
+    labels.onehot = label_onehot(labels)
+    class.dist.mat = ape::cophenetic.phylo(tree)[colnames(labels.onehot), colnames(labels.onehot)]
+    class.sim.mat = 1 - class.dist.mat/max(class.dist.mat)  # range [0,1]
 
-	sim.mat = labels.onehot %*%  class.sim.mat %*% t( labels.onehot )
+    sim.mat = labels.onehot %*% class.sim.mat %*% t(labels.onehot)
 
-	return(sim.mat)
+    return(sim.mat)
 }
 
 
@@ -242,14 +303,15 @@ get_similarity_from_tree <- function(tree, labels){
 #'
 #' @param labelmat a n-by-m labelmatrix, n samples, and m clusterings one per column
 #' @return a n-by-n similarity matrix
-#' @importFrom e1071 hamming.distance
-get_similarity_from_labelmat <- function(labelmat){
+get_similarity_from_labelmat <- function(labelmat) {
 
-	d = e1071::hamming.distance(labelmat)
-	sim.mat = 1-d/max(d)
+    d = hamming.distance(labelmat)
+    sim.mat = 1 - d/max(d)
 
-	return(sim.mat)
+    return(sim.mat)
 }
+
+
 
 #' Calculate the L1 distance between two similarity matrix.
 #' Get the diff of two trees, which are represented with the similarity matrices
@@ -258,11 +320,11 @@ get_similarity_from_labelmat <- function(labelmat){
 #' @param sim.mat2 second similarity matrix
 #'
 #' @return
-diff_between_similarity_mat <- function(sim.mat1, sim.mat2){
-	n = nrow(sim.mat1)
-	diff = sum(abs(sim.mat1-sim.mat2))/n/n
+diff_between_similarity_mat <- function(sim.mat1, sim.mat2) {
+    n = nrow(sim.mat1)
+    diff = sum(abs(sim.mat1 - sim.mat2))/n/n
 
-	return (diff)
+    return(diff)
 }
 
 
@@ -273,35 +335,35 @@ diff_between_similarity_mat <- function(sim.mat1, sim.mat2){
 #'
 #' @return a n-by-K one-hot encoded binary matrix
 #' @import checkmate
-label_onehot <- function(labels, K=NULL){
+label_onehot <- function(labels, K = NULL) {
 
-	types = unique(labels)
-	n.types = length(types)
+    types = unique(labels)
+    n.types = length(types)
 
-	if(is.null(K)){
-		K = length(types)
-	} else {
-	    checkmate::assertTRUE(n.types <= K)
-	}
+    if (is.null(K)) {
+        K = length(types)
+    } else {
+        checkmate::assertTRUE(n.types <= K)
+    }
 
-	n = length(labels)
-	memb = matrix(0, nrow=n, ncol=K)
+    n = length(labels)
+    memb = matrix(0, nrow = n, ncol = K)
 
-	for( k in 1:n.types){
-		ind.k = which(labels==types[k])
-		memb[ind.k,k] = 1
-	}
+    for (k in 1:n.types) {
+        ind.k = which(labels == types[k])
+        memb[ind.k, k] = 1
+    }
 
-	colnames(memb)[1:n.types] = types
+    colnames(memb)[1:n.types] = types
 
-	return(memb)
+    return(memb)
 }
 
 
 #' Convert phylo_tree to label matrix
 #'
 #' @param tree phylo object or hclust object
-tree_to_labelmat <- function(tree, ...){
+tree_to_labelmat <- function(tree, ...) {
     UseMethod("tree_to_labelmat", tree)
 }
 
@@ -311,19 +373,20 @@ tree_to_labelmat <- function(tree, ...){
 #' @param tree phylo tree
 #'
 #' @return a label matrix
+#'
 #' @importFrom ape Ntip
 #' @importFrom dendextend cutree
-tree_to_labelmat.phylo <- function(tree, Ks = NULL){
+tree_to_labelmat.phylo <- function(tree, Ks = NULL) {
 
-    if(is.null(Ks)){
+    if (is.null(Ks)) {
         Ks = 2:ape::Ntip(tree)
     } else {
-        Ks = Ks[Ks<=ape::Ntip(tree)]
+        Ks = Ks[Ks <= ape::Ntip(tree)]
     }
     labels = as.character(tree$sample.labels)
 
-    labelmat = do.call(cbind,lapply(Ks, function(i){
-        tip.labels = dendextend::cutree(tree,k=i)
+    labelmat = do.call(cbind, lapply(Ks, function(i) {
+        tip.labels = dendextend::cutree(tree, k = i)
         tip.labels[labels]
     }))
     Ks = apply(labelmat, 2, function(x) length(unique(x)))
@@ -337,17 +400,17 @@ tree_to_labelmat.phylo <- function(tree, Ks = NULL){
 #'
 #' @return a label matrix
 #' @importFrom dendextend cutree
-tree_to_labelmat.hclust <- function(tree, Ks = NULL){
+tree_to_labelmat.hclust <- function(tree, Ks = NULL) {
 
-    if(is.null(Ks)){
+    if (is.null(Ks)) {
         Ks = 2:length(tree$labels)
     } else {
-        Ks = Ks[Ks<=length(tree$labels)]
+        Ks = Ks[Ks <= length(tree$labels)]
     }
     labels = as.character(tree$sample.labels)
 
-    labelmat = do.call(cbind,lapply(Ks, function(i){
-        tip.labels = dendextend::cutree(tree,k=i)
+    labelmat = do.call(cbind, lapply(Ks, function(i) {
+        tip.labels = dendextend::cutree(tree, k = i)
         tip.labels[labels]
     }))
     Ks = apply(labelmat, 2, function(x) length(unique(x)))

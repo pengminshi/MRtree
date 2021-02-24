@@ -8,9 +8,9 @@
 #' @export
 log_to_file <- function(fn, logger = "ROOT", newfile = False) {
     if (newfile) {
-        if (file.exists(fn))
+        if (file.exists(fn)) 
             # Delete file if it exists
-            file.remove(fn)
+        file.remove(fn)
     }
     tmp = futile.logger::flog.appender(futile.logger::appender.file(fn), name = logger)
 }
@@ -37,9 +37,9 @@ log_to_console <- function(logger = "ROOT") {
 #' @export
 log_to_both <- function(fn, logger = "ROOT", newfile = F) {
     if (newfile) {
-        if (file.exists(fn))
+        if (file.exists(fn)) 
             # Delete file if it exists
-            file.remove(fn)
+        file.remove(fn)
     }
     tmp = futile.logger::flog.appender(futile.logger::appender.tee(fn), name = logger)
 }

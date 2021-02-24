@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_utils.R
 \name{gg_color_hue}
 \alias{gg_color_hue}
-\title{Generate the defult colors}
+\title{Generate colors that approximate the default ggplot colors}
 \usage{
 gg_color_hue(n)
 }
@@ -10,8 +10,8 @@ gg_color_hue(n)
 \item{n}{integer, number of colors}
 }
 \value{
-n colors
+a vector of length n, of strings giving n colors
 }
 \description{
-Generate the defult colors
+Generate colors that approximate the default ggplot colors
 }

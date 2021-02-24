@@ -34,24 +34,24 @@ plot_umap(
 \item{min_dist}{umap parameter, minimum distance of point to its nearest neighbor in the
 embedding space.}
 
-\item{point.size}{numeric scalar, point size in the plot}
+\item{point.size}{numeric scalar, point size in the plot, 0.3 by default.}
 
-\item{alpha}{numeric, transparency of the points in the plot}
+\item{alpha}{numeric, transparency of the points in the plot, by default alpha=1 with no transparency}
 
-\item{title}{string, title of the plot}
+\item{title}{string, title of the plot, NULL by default}
 
-\item{legend.name}{string, legend name}
+\item{legend.name}{string, legend name, by default is 'labels'}
 
-\item{cols}{vector of colors, length should the same as cardinality of labels}
+\item{cols}{vector of colors, length should the same as cardinality of labels, by default NULL}
 
-\item{emb}{embedding of the UMAP if provided}
+\item{emb}{embedding of the UMAP if provided, by default NULL}
 
-\item{seed}{random seed}
+\item{seed}{random seed, by default 0}
 }
 \value{
 A list of \describe{
-\item{p} umap plot
-\item{emb} umap embedding matrix
+\item{p}{umap plot}
+\item{emb}{umap embedding matrix}
 }
 }
 \description{

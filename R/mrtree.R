@@ -37,68 +37,60 @@ mrtree <- function(x, ...) {
 #' \code{mrtree} with label saved in a matrix as input
 #' @rdname mrtree
 #' @import checkmate parallel
-#' @importFrom bnstruct knn.impute
 #' @export
-mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
-                          consensus = F, sample.weighted = F, augment.path = F,
-                          verbose = F, n.cores = parallel::detectCores()-1) {
-    if (n.cores > parallel::detectCores()-1){
-        warnings('Use ', parallel::detectCores()-1, 'cores instead!')
-        n.cores = parallel::detectCores()-1
+mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL, max.k = Inf, consensus = F,
+    sample.weighted = F, augment.path = F, verbose = F, n.cores = parallel::detectCores() -
+        1) {
+    if (n.cores > parallel::detectCores() - 1) {
+        warnings("Use ", parallel::detectCores() - 1, "cores instead!")
+        n.cores = parallel::detectCores() - 1
     }
 
-    Ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)]))) # number of clusters per resolution
+    Ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)])))  # number of clusters per resolution
 
-    if (is.unsorted(Ks)){
+    if (is.unsorted(Ks)) {
         ord = order(Ks, decreasing = F)
         labelmat = labelmat[, ord]
         Ks = Ks[ord]
     }
 
-    if (max.k != Inf){
+    if (max.k != Inf) {
         is.effective = Ks < max.k
-        labelmat = labelmat[,is.effective, drop=F]
+        labelmat = labelmat[, is.effective, drop = F]
         Ks = Ks[is.effective]
     }
 
-    labelmat.flat = labelmat        # save the initial flat clustering results
-    nk = length(Ks)                 # number of initial clusterings
+    labelmat.flat = labelmat  # save the initial flat clustering results
+    nk = length(Ks)  # number of initial clusterings
 
-    if (consensus){
+    if (consensus) {
         # within resolution consensus clustering
-        ccs.out = consensus_clustering_within_resolution(labelmat,
-                                                         ks = Ks,
-                                                         sample.weighted=sample.weighted,
-                                                         n.cores = n.cores)
-        labelmat = ccs.out$labelmat.ccs     # after consensus cluster, each layer has unique number of clusters
+        ccs.out = consensus_clustering_within_resolution(labelmat, ks = Ks, sample.weighted = sample.weighted,
+            n.cores = n.cores)
+        labelmat = ccs.out$labelmat.ccs  # after consensus cluster, each layer has unique number of clusters
         labelmat.ccs = labelmat
     } else {
         labelmat.ccs = NULL
     }
 
-    if (sample.weighted){
-        labelmat.encoded = do.call(cbind, lapply(1:ncol(labelmat), function(l){
-            label_to_membership(labelmat[,l])
+    if (sample.weighted) {
+        labelmat.encoded = do.call(cbind, lapply(1:ncol(labelmat), function(l) {
+            label_to_membership(labelmat[, l])
         }))
 
         colsum = colSums(labelmat.encoded)
-        sample_weights = 1 / sqrt(apply(labelmat.encoded, 1, function(x) sum(colsum[x]))) # W^{-1/2}
+        sample_weights = 1/sqrt(apply(labelmat.encoded, 1, function(x) sum(colsum[x])))  # W^{-1/2}
 
     } else {
-        sample_weights = rep(1, nrow(labelmat))         # weights for samples
+        sample_weights = rep(1, nrow(labelmat))  # weights for samples
     }
 
 
-    if (any(is.na(labelmat))){
-        # if there are missing labels, input via nearest neighbor
-        labelmat = bnstruct::knn.impute(labelmat, k=5)
-        labelmat.imputed = labelmat
-    } else {
-        labelmat.imputed = NULL
-    }
+    # if (any(is.na(labelmat))){ # if there are missing labels, input via nearest
+    # neighbor labelmat = bnstruct::knn.impute(labelmat, k=5) labelmat.imputed =
+    # labelmat } else { labelmat.imputed = NULL }
 
-    ###############
-    # initialize
+    ############### initialize
     if (verbose)
         logmsg("initilize the tree ...")
 
@@ -114,10 +106,10 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
     candidate = tree[candidate.ind, ]
 
     # progress bar
-    message('Run MrTree:')
+    message("Run MrTree:")
     total_bad = length(bad.node)
-    pb <- txtProgressBar(min = -total_bad-1, max =0, style = 3)
-    lowest.layer.last =  NULL
+    pb <- txtProgressBar(min = -total_bad - 1, max = 0, style = 3)
+    lowest.layer.last = NULL
 
 
     while (length(bad.node) > 0) {
@@ -127,11 +119,11 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         # top down-collection, lowest three layers
         layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
         layer.unique.sorted = sort(unique(layer), decreasing = F)
-        lowest.layer = layer.unique.sorted[1: min(2, length(layer.unique.sorted))] # among three lowest layers
+        lowest.layer = layer.unique.sorted[1:min(2, length(layer.unique.sorted))]  # among three lowest layers
         ind.lowest.layer = which(layer %in% lowest.layer)
         candidate = candidate[ind.lowest.layer, ]
 
-        if (augment.path){
+        if (augment.path) {
             paths = augment_path(paths, layers = setdiff(lowest.layer, lowest.layer.last))
             lowest.layer.last = unique(c(lowest.layer.last, lowest.layer))
         }
@@ -139,7 +131,7 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         # calculate the cost for candidates
         candidate$cost = unlist(parallel::mclapply(1:nrow(candidate), function(i) {
             cost(node.start = candidate$start[i], node.end = candidate$end[i], paths = paths,
-                 labelmat = labelmat, labelmat.in.paths = labelmat.in.paths, sample_weights = sample_weights)
+                labelmat = labelmat, labelmat.in.paths = labelmat.in.paths, sample_weights = sample_weights)
         }, mc.cores = n.cores))  #, mc.cores =  parallel::detectCores()-1)
 
         # choose the edge with minimum cost
@@ -153,7 +145,7 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
 
         if (verbose) {
             logmsg("Select edge-> start:", node.start, ", end:", node.end, ", cost:",
-                   candidate$cost[ind.min])
+                candidate$cost[ind.min])
         }
 
         # remove paths that has the same end node but different start node
@@ -167,8 +159,8 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         node.end.decoded = decode(node.end)
         node.start.decoded = decode(node.start)
         node.ind.affected = which(labelmat.in.paths[, node.end.decoded$layer] ==
-                                      node.end.decoded$label & labelmat.in.paths[, node.start.decoded$layer] !=
-                                      node.start.decoded$label)  # only the node on the eliminated paths are affected
+            node.end.decoded$label & labelmat.in.paths[, node.start.decoded$layer] !=
+            node.start.decoded$label)  # only the node on the eliminated paths are affected
 
         if (verbose) {
             logmsg("length(node.ind.affected)=", length(node.ind.affected))
@@ -177,8 +169,8 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         if (length(node.ind.affected) > 0) {
             checkmate::assert_true(nrow(labelmat.in.paths) == nrow(labelmat))
 
-            labelmat.in.paths[node.ind.affected, ] = paths[assign_samples_to_paths(labelmat = labelmat[node.ind.affected, ,drop=F],
-                                                                                   paths = paths), , drop=F]
+            labelmat.in.paths[node.ind.affected, ] = paths[assign_samples_to_paths(labelmat = labelmat[node.ind.affected,
+                , drop = F], paths = paths), , drop = F]
         }
 
         # update tree
@@ -195,10 +187,11 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
         candidate.ind = which((tree$end %in% bad.node))  # include all edges to the nodes not visited
         candidate = tree[candidate.ind, ]
 
-        if (augment.path){
-            paths = rbind(unique(labelmat.in.paths),  # remove the path with 0 data points assigned
-                          unique(paths[apply(paths[,lowest.layer, drop=F], 1, function(x) any(x == -1)),, drop=F]) # the path that has -1 in lowest layers
-            )
+        if (augment.path) {
+            # remove the path with 0 data points assigned the path that has -1 in lowest
+            # layers
+            paths = rbind(unique(labelmat.in.paths), unique(paths[apply(paths[, lowest.layer,
+                drop = F], 1, function(x) any(x == -1)), , drop = F]))
             paths = unique(paths)
         } else {
             paths = unique(labelmat.in.paths)
@@ -211,31 +204,27 @@ mrtree.matrix <- function(labelmat, prefix = NULL, suffix = NULL,  max.k = Inf,
     setTxtProgressBar(pb, -length(bad.node))
     close(pb)
 
-    if (consensus){
+    if (consensus) {
         # map the reconciled layers with the original layers
         labelmat.recon = labelmat.in.paths[, ccs.out$k.idx]
         colnames(labelmat.recon) = colnames(labelmat.flat)
         Ks.recon = apply(labelmat.recon, 2, function(y) length(unique(y)))
     } else {
-        labelmat.recon =  labelmat.in.paths
+        labelmat.recon = labelmat.in.paths
         Ks.recon = apply(labelmat.recon, 2, function(y) length(unique(y)))
     }
 
-    unique.idx = which(!duplicated(Ks.recon[-length(Ks.recon)], MARGIN = 2)) # remove the last column in labelmat.recon
-    labelmat.tree = labelmat.recon[, unique.idx, drop=F]
+    unique.idx = which(!duplicated(Ks.recon[-length(Ks.recon)], MARGIN = 2))  # remove the last column in labelmat.recon
+    labelmat.tree = labelmat.recon[, unique.idx, drop = F]
     colnames(labelmat.tree) = paste0("K", Ks.recon[unique.idx])
 
     resolutions = colnames(labelmat.flat)
 
-    return(list(labelmat.mrtree = labelmat.tree,
-                labelmat.recon = labelmat.recon,
-                labelmat.flat = labelmat.flat,
-                labelmat.ccs = labelmat.ccs,
-                labelmat.imputed = labelmat.imputed,
-                resolutions = resolutions,
-                paths = paths,
-                params = list(prefix=prefix, suffix=suffix,
-                              consensus=consensus, sample.weighted=sample.weighted, max.k=max.k)))
+    return(list(labelmat.mrtree = labelmat.tree, labelmat.recon = labelmat.recon,
+        labelmat.flat = labelmat.flat, labelmat.ccs = labelmat.ccs,
+        resolutions = resolutions, paths = paths, params = list(prefix = prefix,
+            suffix = suffix, consensus = consensus, sample.weighted = sample.weighted,
+            max.k = max.k)))
 }
 
 
@@ -254,7 +243,7 @@ mrtree.data.frame <- function(x, prefix, suffix = NULL, ...) {
 
     if (sum(clust_cols) < 2) {
         stop(paste("Less than two column names matched the prefix: ", prefix, "and suffix: ",
-                   suffix), call. = FALSE)
+            suffix), call. = FALSE)
     }
 
     clusterings <- as.matrix(x[, clust_cols])
@@ -268,12 +257,11 @@ mrtree.data.frame <- function(x, prefix, suffix = NULL, ...) {
 #' @rdname mrtree
 #' @import checkmate
 #' @export
-mrtree.SingleCellExperiment <- function(x, prefix='sc3_', suffix = "_clusters",...) {
+mrtree.SingleCellExperiment <- function(x, prefix = "sc3_", suffix = "_clusters",
+    ...) {
 
-    if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
-        stop("The SingleCellExperiment package is missing, this must be",
-             "installed for clustree to use SingleCellExperiment objects",
-             call. = FALSE)
+    if (!"SingleCellExperiment" %in% installed.packages()) {
+        BiocManager::install("SingleCellExperiment")
     }
 
     checkmate::assert_class(x, "SingleCellExperiment")
@@ -287,11 +275,9 @@ mrtree.SingleCellExperiment <- function(x, prefix='sc3_', suffix = "_clusters",.
 #' @rdname mrtree
 #' @import checkmate
 #' @export
-mrtree.Seurat <- function(x, prefix = 'RNA_snn_res.', suffix = NULL,...) {
-    if (!requireNamespace("Seurat", quietly = TRUE)) {
-        stop("The Seurat package is missing, this must be installed for ",
-             "clustree to use seurat objects",
-             call. = FALSE)
+mrtree.Seurat <- function(x, prefix = "RNA_snn_res.", suffix = NULL, ...) {
+    if (!"Seurat" %in% installed.packages()) {
+        install.packages("Seurat")
     }
 
     checkmate::assert_class(x, "Seurat")
@@ -320,7 +306,7 @@ construct_tree_from_labelmat <- function(labelmat) {
     for (l in 1:(nb.layer - 1)) {
 
         edgelist = table_to_edgelist(labels.start = labelmat[, l], labels.end = labelmat[,
-                                                                                         l + 1])
+            l + 1])
 
         edgelist$start = paste(l, edgelist$start, sep = ";")
         edgelist$end = paste(l + 1, edgelist$end, sep = ";")
@@ -332,35 +318,37 @@ construct_tree_from_labelmat <- function(labelmat) {
 }
 
 #' Augment the path to include on additional node as alternative to each layer
-augment_path <- function(paths, layers, aug.name=-1){
+augment_path <- function(paths, layers, aug.name = -1) {
 
-    if (length(layers)==0){
-        return (paths)
+    if (length(layers) == 0) {
+        return(paths)
     }
 
     nb.layers = ncol(paths)
     nb.paths = nrow(paths)
 
     paths.augmented = NULL
-    for (layer in layers){
-        if (layer != nb.layers & !(aug.name %in% paths[,layer])){
-            if (layer == 1){
-                aug_ind2 = apply(paths[,2:nb.layers, drop=F], 1, function(x) any(x==-1))
-                paths2 = paths[!aug_ind2, 2:nb.layers, drop=F]
+    for (layer in layers) {
+        if (layer != nb.layers & !(aug.name %in% paths[, layer])) {
+            if (layer == 1) {
+                aug_ind2 = apply(paths[, 2:nb.layers, drop = F], 1, function(x) any(x ==
+                  -1))
+                paths2 = paths[!aug_ind2, 2:nb.layers, drop = F]
 
-                paths.augmented = rbind(path_dot_product(paths1=matrix(aug.name, nrow=1, ncol=1),
-                                                         paths2=paths2),
-                                        paths.augmented)
-            } else{
-                aug_ind1 = apply(paths[,1:(layer-1), drop=F], 1,  function(x) any(x==-1))
-                aug_ind2 = apply(paths[,(layer+1):nb.layers,drop=F], 1, function(x) any(x==-1))
+                paths.augmented = rbind(path_dot_product(paths1 = matrix(aug.name,
+                  nrow = 1, ncol = 1), paths2 = paths2), paths.augmented)
+            } else {
+                aug_ind1 = apply(paths[, 1:(layer - 1), drop = F], 1, function(x) any(x ==
+                  -1))
+                aug_ind2 = apply(paths[, (layer + 1):nb.layers, drop = F], 1, function(x) any(x ==
+                  -1))
 
-                paths1 = cbind(paths[!aug_ind1,1:(layer-1), drop=F],
-                               rep(aug.name, sum(!aug_ind1)))
-                paths2 = paths[!aug_ind2, (layer+1):nb.layers,drop=F]
+                paths1 = cbind(paths[!aug_ind1, 1:(layer - 1), drop = F], rep(aug.name,
+                  sum(!aug_ind1)))
+                paths2 = paths[!aug_ind2, (layer + 1):nb.layers, drop = F]
 
-                paths.augmented = rbind(path_dot_product(paths1=paths1, paths2=paths2),
-                                        paths.augmented)
+                paths.augmented = rbind(path_dot_product(paths1 = paths1, paths2 = paths2),
+                  paths.augmented)
             }
         }
     }
@@ -388,11 +376,12 @@ cost <- function(node.start, node.end, paths, labelmat, labelmat.in.paths, sampl
     node.end.decoded = decode(node.end)
     node.ind.affected = which(labelmat.in.paths[, node.end.decoded$layer] == node.end.decoded$label)
 
-    labelmat.in.paths.affected.old = labelmat.in.paths[node.ind.affected,,drop=F]
-    labelmat.in.paths.affected.new = paths.new[assign_samples_to_paths(labelmat = labelmat[node.ind.affected,,drop=F],
-                                                                      paths = paths.new), ]
+    labelmat.in.paths.affected.old = labelmat.in.paths[node.ind.affected, , drop = F]
+    labelmat.in.paths.affected.new = paths.new[assign_samples_to_paths(labelmat = labelmat[node.ind.affected,
+        , drop = F], paths = paths.new), ]
 
-    cost = sum(sample_weights[node.ind.affected] * (labelmat.in.paths.affected.old != labelmat.in.paths.affected.new))
+    cost = sum(sample_weights[node.ind.affected] * (labelmat.in.paths.affected.old !=
+        labelmat.in.paths.affected.new))
 
     return(cost)
 }
@@ -412,13 +401,13 @@ table_to_edgelist <- function(labels.start, labels.end) {
     tab = table(labels.start, labels.end)
     rowsum = rowSums(tab)
     colsum = colSums(tab)
-    norm = matrix(rep(rowsum, ncol(tab)), ncol = ncol(tab)) + matrix(rep(colsum, nrow(tab)), nrow = nrow(tab), byrow = T)
+    norm = matrix(rep(rowsum, ncol(tab)), ncol = ncol(tab)) + matrix(rep(colsum,
+        nrow(tab)), nrow = nrow(tab), byrow = T)
     norm[norm == 0] = Inf
     tab = tab/norm
     nonzero.ind = which(tab > 0)
-    edgelist = data.frame(start = rownames(tab)[row(tab)[nonzero.ind]],
-                          end = colnames(tab)[col(tab)[nonzero.ind]],
-                          count = tab[nonzero.ind], cost = Inf)
+    edgelist = data.frame(start = rownames(tab)[row(tab)[nonzero.ind]], end = colnames(tab)[col(tab)[nonzero.ind]],
+        count = tab[nonzero.ind], cost = Inf)
 
     return(edgelist)
 }
@@ -458,11 +447,12 @@ prune_paths <- function(paths, node.start, node.end) {
     is.conflict = (paths[, node.start.decoded$layer] != node.start.decoded$label) &
         (paths[, node.end.decoded$layer] == node.end.decoded$label)
 
-    if (sum(is.conflict) > 0 & node.end.decoded$layer < ncol(paths)){
+    if (sum(is.conflict) > 0 & node.end.decoded$layer < ncol(paths)) {
         is.selected = (paths[, node.start.decoded$layer] == node.start.decoded$label) &
             (paths[, node.end.decoded$layer] == node.end.decoded$label)
-        paths.to.remove.modified = path_dot_product(paths1=paths[is.selected, 1:node.end.decoded$layer, drop=F],
-                                                    paths2=paths[is.conflict, (1+node.end.decoded$layer):ncol(paths), drop=F])
+        paths.to.remove.modified = path_dot_product(paths1 = paths[is.selected, 1:node.end.decoded$layer,
+            drop = F], paths2 = paths[is.conflict, (1 + node.end.decoded$layer):ncol(paths),
+            drop = F])
     } else {
         paths.to.remove.modified = NULL
     }
@@ -473,18 +463,18 @@ prune_paths <- function(paths, node.start, node.end) {
 }
 
 #' outer product of path prefix and suffix
-path_dot_product <- function(paths1, paths2){
+path_dot_product <- function(paths1, paths2) {
     paths1 = unique(paths1)
     paths2 = unique(paths2)
 
     nb.paths1 = nrow(paths1)
     nb.paths2 = nrow(paths2)
 
-    if (nb.paths1 ==0 | nb.paths2==0){
+    if (nb.paths1 == 0 | nb.paths2 == 0) {
         return(NULL)
     }
-    path.product = cbind(paths1[rep(1:nb.paths1, nb.paths2), , drop=F],
-                         paths2[rep(1:nb.paths2, each=nb.paths1), , drop=F])
+    path.product = cbind(paths1[rep(1:nb.paths1, nb.paths2), , drop = F], paths2[rep(1:nb.paths2,
+        each = nb.paths1), , drop = F])
     return(path.product)
 }
 
@@ -498,12 +488,13 @@ path_dot_product <- function(paths1, paths2){
 #'
 #' @import checkmate parallel
 #' @export
-assign_samples_to_paths <- function(labelmat, paths, n.cores=parallel::detectCores() - 1) {
+assign_samples_to_paths <- function(labelmat, paths, n.cores = parallel::detectCores() -
+    1) {
 
     n.layers = ncol(paths)
     paths = t(paths)
 
-    path.labels = apply(labelmat, 1, function(label){
+    path.labels = apply(labelmat, 1, function(label) {
         min.ind = which.min(colSums((abs(paths - label) > 0)))
         if (length(min.ind) > 1) {
             min.ind = sample(min.ind, 1)
@@ -521,8 +512,7 @@ assign_samples_to_paths <- function(labelmat, paths, n.cores=parallel::detectCor
 #'
 #' @return A vector containing the name of the bad vertex
 get_bad_nodeset <- function(tree) {
-    nb_in_edge.out = aggregate(tree$start, by = list(tree$end),
-                               FUN = function(x) length(unique(x)))
+    nb_in_edge.out = aggregate(tree$start, by = list(tree$end), FUN = function(x) length(unique(x)))
     bad.node = nb_in_edge.out$Group.1[nb_in_edge.out$x > 1]
 
     return(bad.node)
@@ -541,8 +531,9 @@ get_bad_nodeset <- function(tree) {
 #' }
 #' @import parallel
 #' @export
-consensus_clustering_within_resolution <- function(labelmat, ks=NULL, sample.weighted=F, n.cores = NULL){
-    if (is.null(ks)){
+consensus_clustering_within_resolution <- function(labelmat, ks = NULL, sample.weighted = F,
+    n.cores = NULL) {
+    if (is.null(ks)) {
         ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)])))
     }
 
@@ -551,24 +542,24 @@ consensus_clustering_within_resolution <- function(labelmat, ks=NULL, sample.wei
     k_idx = unique.out$ic
     nk = length(k_unique)
 
-    if (is.null(n.cores)){
+    if (is.null(n.cores)) {
         n.cores = min(nk, parallel::detectCores() - 4)
     }
 
-    labelmat.ccs = do.call(cbind, lapply(1:nk, function(i){
+    labelmat.ccs = do.call(cbind, lapply(1:nk, function(i) {
         k = k_unique[i]
-        idx = which(k_idx==i)
-        if (length(idx) > 1){
-            if (sample.weighted){
-                consensus_clustering_weighted(labelmat[,idx], k=k)
+        idx = which(k_idx == i)
+        if (length(idx) > 1) {
+            if (sample.weighted) {
+                consensus_clustering_weighted(labelmat[, idx], k = k)
             } else {
-                consensus_clustering(labelmat[,idx], k=k)
+                consensus_clustering(labelmat[, idx], k = k)
             }
         } else {
-            labelmat[,idx, drop=F]
+            labelmat[, idx, drop = F]
         }
     }))
-    return(list(labelmat.ccs=labelmat.ccs, k.idx = k_idx))
+    return(list(labelmat.ccs = labelmat.ccs, k.idx = k_idx))
 }
 
 
@@ -581,45 +572,47 @@ consensus_clustering_within_resolution <- function(labelmat, ks=NULL, sample.wei
 #'
 #' @import RSpectra
 #' @export
-consensus_clustering <- function(labelmat, k=NULL){
+consensus_clustering <- function(labelmat, k = NULL) {
     m = ncol(labelmat)
     n = nrow(labelmat)
-    if (m==1){
-        return (matrix(labelmat, ncol=1))
+    if (m == 1) {
+        return(matrix(labelmat, ncol = 1))
     }
 
-    if (is.null(k)){ # if k not provided
+    if (is.null(k)) {
+        # if k not provided
         ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)])))
         k = unique(ks)
-        if (length(k)>1){
-            warning('Error, clustering applied to non-k clustering')
+        if (length(k) > 1) {
+            warning("Error, clustering applied to non-k clustering")
             k = max(ks)
         }
     }
 
-    if (k==1){
-        return (matrix(1, nrow=nrow(labelmat), ncol=1))
+    if (k == 1) {
+        return(matrix(1, nrow = nrow(labelmat), ncol = 1))
     }
 
     # one-hot encode the label matrix
-    labelmat.encoded = do.call(cbind, lapply(1:m, function(l){
-        label_to_membership(labelmat[,l])
+    labelmat.encoded = do.call(cbind, lapply(1:m, function(l) {
+        label_to_membership(labelmat[, l])
     }))
 
     # if there are missing values, weight rows by 1/\sqrt{#assigned clustering}
-    if(any(is.na(labelmat))){
+    if (any(is.na(labelmat))) {
         w = sqrt(rowSums(labelmat.encoded))
-        allmissing = w==0
+        allmissing = w == 0
 
         labels = rep(NA, n)
-        svd.out = RSpectra::svds(labelmat.encoded[!allmissing,] / w[!allmissing], k=k, nv=0)
-        u.weigted = svd.out$u * rep(svd.out$d, each=nrow(svd.out$u))
-        kmeans.out = kmeans(u.weigted, centers=k, nstart = 5, iter.max = 30)
+        svd.out = RSpectra::svds(labelmat.encoded[!allmissing, ]/w[!allmissing],
+            k = k, nv = 0)
+        u.weigted = svd.out$u * rep(svd.out$d, each = nrow(svd.out$u))
+        kmeans.out = kmeans(u.weigted, centers = k, nstart = 5, iter.max = 30)
         labels[!allmissing] = kmeans.out$cluster
     } else {
-        svd.out = RSpectra::svds(labelmat.encoded, k=k, nv=0)
-        u.weigted = svd.out$u * rep(svd.out$d, each=nrow(svd.out$u))
-        kmeans.out = kmeans(u.weigted, centers=k, nstart = 5, iter.max = 30)
+        svd.out = RSpectra::svds(labelmat.encoded, k = k, nv = 0)
+        u.weigted = svd.out$u * rep(svd.out$d, each = nrow(svd.out$u))
+        kmeans.out = kmeans(u.weigted, centers = k, nstart = 5, iter.max = 30)
         labels = kmeans.out$cluster
     }
 
@@ -634,103 +627,51 @@ consensus_clustering <- function(labelmat, k=NULL){
 #' @return consensus clustering result saved as a label vector (NA is labels missing for all clusterings)
 #' @import RSpectra
 #' @export
-consensus_clustering_weighted <- function(labelmat, k=NULL){
+consensus_clustering_weighted <- function(labelmat, k = NULL) {
     m = ncol(labelmat)
     n = nrow(labelmat)
-    if (m==1){
-        return (matrix(labelmat, ncol=1))
+    if (m == 1) {
+        return(matrix(labelmat, ncol = 1))
     }
 
-    if (is.null(k)){ # if k not provided
+    if (is.null(k)) {
+        # if k not provided
         ks = apply(labelmat, 2, function(x) length(unique(x[!is.na(x)])))
         k = unique(ks)
-        if (length(k)>1){
-            warning('Error, clustering applied to non-k clustering')
+        if (length(k) > 1) {
+            warning("Error, clustering applied to non-k clustering")
             k = max(ks)
         }
     }
 
-    if (k==1){
-        return (matrix(1, nrow=nrow(labelmat), ncol=1))
+    if (k == 1) {
+        return(matrix(1, nrow = nrow(labelmat), ncol = 1))
     }
 
     # one-hot encode the label matrix
-    labelmat.encoded = do.call(cbind, lapply(1:m, function(l){
-        label_to_membership(labelmat[,l])
+    labelmat.encoded = do.call(cbind, lapply(1:m, function(l) {
+        label_to_membership(labelmat[, l])
     }))
 
     colsum = colSums(labelmat.encoded)
-    weights_sqrt = 1 / sqrt(apply(labelmat.encoded, 1, function(x) sum(colsum[x]))) # W^{-1/2}
+    weights_sqrt = 1/sqrt(apply(labelmat.encoded, 1, function(x) sum(colsum[x])))  # W^{-1/2}
 
     # if there are missing values, weight rows by 1/\sqrt{#assigned clustering}
-    if(any(is.na(labelmat))){
+    if (any(is.na(labelmat))) {
         allmissing = rowSums(labelmat.encoded) == 0
         labels = rep(NA, n)
-        svd.out = RSpectra::svds(weights_sqrt[!allmissing] * labelmat.encoded[!allmissing,], k=k, nv=0)
-        u.weigted = svd.out$u * rep(svd.out$d, each=nrow(svd.out$u))
-        kmeans.out = kmeans(u.weigted, centers=k, nstart = 5, iter.max = 30)
+        svd.out = RSpectra::svds(weights_sqrt[!allmissing] * labelmat.encoded[!allmissing,
+            ], k = k, nv = 0)
+        u.weigted = svd.out$u * rep(svd.out$d, each = nrow(svd.out$u))
+        kmeans.out = kmeans(u.weigted, centers = k, nstart = 5, iter.max = 30)
         labels[!allmissing] = kmeans.out$cluster
     } else {
-        svd.out = RSpectra::svds(weights_sqrt * labelmat.encoded, k=k, nv=0)
-        u.weigted = svd.out$u * rep(svd.out$d, each=nrow(svd.out$u))
-        kmeans.out = kmeans(u.weigted, centers=k, nstart = 5, iter.max = 30)
+        svd.out = RSpectra::svds(weights_sqrt * labelmat.encoded, k = k, nv = 0)
+        u.weigted = svd.out$u * rep(svd.out$d, each = nrow(svd.out$u))
+        kmeans.out = kmeans(u.weigted, centers = k, nstart = 5, iter.max = 30)
         labels = kmeans.out$cluster
     }
 
     return(labels)
-}
-
-
-#' Impute the missing labels by K nearest neighbor
-#'
-#' @param labelmat n-by-m sample by clustering label matrix
-#' @param k number of nearest neighbor to consider
-#'
-#' @return Imputed labelmatrix
-#' @importFrom FNN get.knnx
-#' @export
-knn_impute <- function(labelmat){
-    labelmat.encoded = do.call(cbind, lapply(1:ncol(labelmat),
-                                             function(j) label_to_membership(labelmat[,j]))) # convert chategorical matirx to numeric
-    missing.row = apply(labelmat, 1, function(x) any(is.na(x)))
-
-    labelmat.encoded.nonmissing = labelmat.encoded[!missing.row,]
-    labelmat.nonmissing = labelmat[!missing.row,]
-    for (missing.row.idx in which(missing.row)){
-        knn.idx = FNN::get.knnx(labelmat.encoded.nonmissing,
-                                labelmat.encoded[missing.row.idx, ,drop=FALSE],
-                                k=1)$nn.index
-        missing.col = is.na(labelmat[missing.row.idx, ]) # missing columns for this missing sample
-        labelmat[missing.row.idx, missing.col] = labelmat.nonmissing[knn.idx, missing.col, drop=F]
-    }
-
-    return (labelmat)
-}
-
-
-#' Convert label vector to membership matrix
-#'
-#' @param labels a vector of labels from K distint classes
-#' @param labels.names (optional) alternative label names, used for naming columns of membership matrix
-#'
-#' @return an n-by-K binary membership matrix
-#' @import checkmate
-#' @export
-label_to_membership <- function(labels, label.names = NULL) {
-    if (is.null(label.names)) {
-        label.names = sort(unique(labels[!is.na(labels)]))
-    } else {
-        checkmate::assert_true(all(labels[!is.na(labels)] %in% label.names))
-    }
-
-    K = length(label.names)
-    memb = t(sapply(labels, function(lab) {
-        if (is.na(lab)){
-            rep(0, K) # if label missing then return 0 row
-        } else {
-            as.numeric(label.names == lab)
-        }
-    } ))
-    return(matrix(memb, ncol=K))
 }
 

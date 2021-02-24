@@ -21,8 +21,8 @@ sc_clustering.HAC(
 
 \item{labels}{vector of string/factor, if provided, HAC is performed starting from clusters}
 
-\item{method}{string, similarity method, one of "ward.D", "ward.D2", "single", "complete", "average" (= UPGMA),
-"mcquitty" (= WPGMA), "median" (= WPGMC) or "centroid" (= UPGMC).}
+\item{method}{string, similarity method, one of 'ward.D', 'ward.D2', 'single', 'complete', 'average' (= UPGMA),
+'mcquitty' (= WPGMA), 'median' (= WPGMC) or 'centroid' (= UPGMC).}
 
 \item{type}{string, type of the expression matrix, choices are 'count' and 'log', and default by 'counts}
 
