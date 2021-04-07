@@ -9,11 +9,11 @@ create_sce_from_counts(counts, col.data, row.data = NULL, scale.factor = 10000)
 \arguments{
 \item{counts}{gene-by-cell count matrix}
 
+\item{col.data}{a dataframe containing cell informations}
+
+\item{row.data}{a dataframe containing gene informations}
+
 \item{scale.factor}{scalar used for per cell sum of count normalization}
-
-\item{colData}{a dataframe containing cell informations}
-
-\item{rowData}{a dataframe containing gene informations}
 }
 \value{
 a SingleCellExperiment object

@@ -2,27 +2,26 @@
 % Please edit documentation in R/plot_utils.R
 \name{plot_tree}
 \alias{plot_tree}
-\title{Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
-shown at each tree node, detailing the label proprotions.}
+\title{Plot MRtree results as hierarchical cluster tree.}
 \usage{
 plot_tree(
   labelmat,
   ref.labels = NULL,
-  show.ref.labels = T,
+  show.ref.labels = TRUE,
   label.order = NULL,
   node.size = 0.2,
   cols = NULL,
-  plot.piechart = T,
+  plot.piechart = TRUE,
   tip.labels = NULL,
-  tip.label.dist = 2,
-  show.branch.labels = F,
+  tip.label.dist = 4,
+  show.branch.labels = FALSE,
   flip.branch = NULL,
   legend.title = "",
   bottom.margin = 25
 )
 }
 \arguments{
-\item{labelmat}{a n by m label matrix, in ouput of \code{mrtree} function, \code{labelmat.mrtree}}
+\item{labelmat}{a n by m label matrix, provided by the ouput of \code{mrtree} function, \code{labelmat.mrtree}}
 
 \item{ref.labels}{a factor or characteristic vector specifying the reference labels of n data points}
 
@@ -32,23 +31,23 @@ plot_tree(
 
 \item{node.size}{scalar, the size of the pie chart / node}
 
-\item{cols}{a vector of colors, one per each label}
+\item{cols}{a vector of colors, one per each label. If not provided, use the default colors.}
 
-\item{plot.piechart}{boolean, whether to draw the pie chart in the tree plot}
+\item{plot.piechart}{boolean, whether to draw the pie chart for each tree node.}
 
-\item{tip.labels}{a vector of strings specifying the labels of tree leafs}
+\item{tip.labels}{a vector of strings specifying the labels of tree leafs. The labels should align with the order of leaf in the plot.}
 
 \item{tip.label.dist}{distance of the tip labels to the tree tips}
 
 \item{show.branch.labels}{boolean, whether to show the branch labels for convenience of flipping branches}
 
-\item{legend.title}{string as legend title, default is an empty string}
+\item{flip.branch}{a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.}
 
-\item{bottom.margin}{size of the bottom margin, need to be adjusted to show the full labels}
+\item{legend.title}{string as legend title. Empty string by default.}
 
-\item{fip.branch}{a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.}
+\item{bottom.margin}{size of the bottom margin, need to be adjusted to show the full labels.}
 }
 \description{
 Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
-shown at each tree node, detailing the label proprotions.
+shown at each tree node, giving the label proprotions for respective cluster.
 }

@@ -17,7 +17,7 @@
 #' 4 = Leiden algorithm). Leiden requires the leidenalg python.
 #' @param build.hierarchical.tree boolean, whether to build hierarchical tree using HAC
 #' from Seurat clusters with \code{max(resolution)}.
-#' @param return.seurat.object boolean, whether to return Seurat object
+#' @param return.seurat.object boolean, whether to return Seurat object. Save memory by setting it to False.
 #' @param verbose boolean, whether to print messages
 #'
 #' @return a list containing \describe{
@@ -27,17 +27,20 @@
 #'     \item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
 #'     using Seurat clusters from \code{max(resolutions)}}
 #' }
-#'
+#' @import checkmate
 #' @importFrom Seurat CreateSeuratObject NormalizeData FindVariableFeatures ScaleData RunPCA
-#' FindNeighbors FindClusters BuildClusterTree VariableFeatures
+#' FindNeighbors FindClusters BuildClusterTree VariableFeatures Tool
+#' @importFrom utils install.packages
 #' @export
 sc_clustering.seurat <- function(counts, resolutions, metadata = NULL, min.cells = 0,
     min.features = 0, scale.factor = 10000, vars.to.regress = NULL, find.variable.features = T,
-    npcs = 40, seurat.graph.algorithm = 1, build.hierarchical.tree = F, return.seurat.object = F,
-    verbose = F) {
-    if (!require(Seurat, quietly = T)) {
-        install.packages("Seurat")
-        require(Seurat, quietly = T)
+    npcs = 40, seurat.graph.algorithm = 1, build.hierarchical.tree = FALSE, return.seurat.object = FALSE,
+    verbose = FALSE) {
+    if (!requireNamespace("Seurat", quietly = TRUE)) {
+        utils::install.packages("Seurat")
+        if (!requireNamespace("Seurat", quietly = TRUE)) {
+            stop("Please install Seurat R package!")
+        }
     }
 
     checkmate::assert_matrix(counts, mode = "numeric", any.missing = FALSE, col.names = "unique",
@@ -123,13 +126,18 @@ sc_clustering.seurat <- function(counts, resolutions, metadata = NULL, min.cells
 #' }
 #'
 #' @importFrom ape as.phylo
+#' @importFrom checkmate assert_matrix assert_numeric
+#' @importFrom utils installed.packages install.packages
 #' @export
 sc_clustering.sc3 <- function(exprs, Ks, type = c("counts", "normcounts"), colData = NULL,
-    rowData = NULL, estimate.k = F, scale.factor = 10000, build.hierarchical.tree = F,
+    rowData = NULL, estimate.k = FALSE, scale.factor = 10000, build.hierarchical.tree = FALSE,
     ...) {
 
-    if (!"SC3" %in% installed.packages()) {
+    if (!"SC3" %in% utils::installed.packages()) {
         BiocManager::install("SC3")
+        if (!"SC3" %in% utils::installed.packages()) {
+            stop("Please install SC3 r package!")
+        }
     }
 
     checkmate::assert_matrix(exprs, mode = "numeric", any.missing = FALSE, min.cols = 2)
@@ -145,7 +153,7 @@ sc_clustering.sc3 <- function(exprs, Ks, type = c("counts", "normcounts"), colDa
             row.data = rowData)
     }
 
-    sce = SC3::sc3(sce, ks = Ks, ...)  #  biology = F, n_cores = NULL, gene_filter = F, pct_dropout_min=-1
+    sce = SC3::sc3(sce, ks = Ks, ...)  #  biology = FALSE, n_cores = NULL, gene_filter = FALSE, pct_dropout_min=-1
 
     if (estimate.k) {
         sce = SC3::sc3_estimate_k(sce)
@@ -168,15 +176,28 @@ sc_clustering.sc3 <- function(exprs, Ks, type = c("counts", "normcounts"), colDa
 #' Create SingleCellExperiment object from count data
 #'
 #' @param counts gene-by-cell count matrix
-#' @param colData a dataframe containing cell informations
-#' @param rowData a dataframe containing gene informations
+#' @param col.data a dataframe containing cell informations
+#' @param row.data a dataframe containing gene informations
 #' @param scale.factor scalar used for per cell sum of count normalization
 #'
 #' @return a SingleCellExperiment object
+#' @importFrom utils installed.packages
 #'
-#' @import SingleCellExperiment
-#' @import SummarizedExperiment
 create_sce_from_counts <- function(counts, col.data, row.data = NULL, scale.factor = 10000) {
+
+    if (!"SingleCellExperiment" %in% utils::installed.packages()) {
+        BiocManager::install("SingleCellExperiment")
+        if (!"SingleCellExperiment" %in% utils::installed.packages()) {
+            stop("Please install SingleCellExperiment r package!")
+        }
+    }
+
+    if (!"SummarizedExperiment" %in% utils::installed.packages()) {
+        BiocManager::install("SummarizedExperiment")
+        if (!"SummarizedExperiment" %in% utils::installed.packages()) {
+            stop("Please install SummarizedExperiment r package!")
+        }
+    }
 
     if (is.null(row.data)) {
         sceset <- SingleCellExperiment::SingleCellExperiment(assays = list(counts = as.matrix(counts)),
@@ -187,13 +208,13 @@ create_sce_from_counts <- function(counts, col.data, row.data = NULL, scale.fact
     }
     # this function writes to logcounts slot exprs(sceset) <-
     # log2(calculateCPM(sceset, use_size_factors = FALSE) + 1)
-    SingleCellExperiment::logcounts(sceset) <- log2(t(t(counts)/colSums(counts)) *
+    SingleCellExperiment::logcounts(sceset) = log2(t(t(counts)/colSums(counts)) *
         scale.factor + 1)
     # use gene names as feature symbols
-    SummarizedExperiment::rowData(sceset)$feature_symbol <- rownames(sceset)
+    SummarizedExperiment::rowData(sceset)$feature_symbol = rownames(sceset)
     # remove features with duplicated names
     if (is.null(row.data)) {
-        sceset <- sceset[!duplicated(SingleCellExperiment::rowData(sceset)$feature_symbol),
+        sceset <- sceset[!duplicated(SummarizedExperiment::rowData(sceset)$feature_symbol),
             ]
     }
     # QC isSpike(sceset, 'ERCC') <- grepl('^ERCC-', rownames(sceset)) sceset <-
@@ -206,26 +227,42 @@ create_sce_from_counts <- function(counts, col.data, row.data = NULL, scale.fact
 #' Create SingleCellExperiment object from normalized data
 #'
 #' @param normcounts gene-by-cell matrix of normalized expressions
-#' @param colData a dataframe containing cell informations
-#' @param rowData a dataframe containing gene informations
+#' @param col.data a dataframe containing cell informations
+#' @param row.data a dataframe containing gene informations
 #'
 #' @return a SingleCellExperiment object
 #' @importFrom SingleCellExperiment SingleCellExperiment rowData
+#' @importFrom utils installed.packages
 create_sce_from_normcounts <- function(normcounts, col.data, row.data = NULL) {
 
+    if (!"SingleCellExperiment" %in% utils::installed.packages()) {
+        BiocManager::install("SingleCellExperiment")
+        if (!"SingleCellExperiment" %in% utils::installed.packages()) {
+            stop("Please install SingleCellExperiment r package!")
+        }
+    }
+
+    if (!"SummarizedExperiment" %in% utils::installed.packages()) {
+        BiocManager::install("SummarizedExperiment")
+        if (!"SummarizedExperiment" %in% utils::installed.packages()) {
+            stop("Please install SummarizedExperiment r package!")
+        }
+    }
+
     if (is.null(row.data)) {
-        sceset <- SingleCellExperiment(assays = list(normcounts = as.matrix(normcounts)),
+        sceset <- SingleCellExperiment::SingleCellExperiment(assays = list(normcounts = as.matrix(normcounts)),
             colData = col.data)
     } else {
-        sceset <- SingleCellExperiment(assays = list(normcounts = as.matrix(normcounts)),
+        sceset <- SingleCellExperiment::SingleCellExperiment(assays = list(normcounts = as.matrix(normcounts)),
             colData = col.data, rowData = row.data)
     }
-    logcounts(sceset) <- normcounts(sceset)
+    SingleCellExperiment::logcounts(sceset) <- SingleCellExperiment::normcounts(sceset)
     # use gene names as feature symbols
-    rowData(sceset)$feature_symbol <- rownames(sceset)
+    SummarizedExperiment::rowData(sceset)$feature_symbol <- rownames(sceset)
     # remove features with duplicated names
     if (is.null(rowData)) {
-        sceset <- sceset[!duplicated(rowData(sceset)$feature_symbol), ]
+        sceset <- sceset[!duplicated(SummarizedExperiment::rowData(sceset)$feature_symbol),
+            ]
     }
     # QC isSpike(sceset, 'ERCC') <- grepl('^ERCC-', rownames(sceset))
     return(sceset)
@@ -254,9 +291,9 @@ prune_tree <- function(hc, k) {
         order[order %in% hc$merge[i, ]] = i
     }
 
-    class = unique(lab)
+    unique.lab = unique(lab)
     labels = -(1:k)
-    names(labels) = class
+    names(labels) = unique.lab
 
     order.pruned = unique(-labels[as.character(order)])
     merge.pruned = matrix(NA, nrow = k - 1, ncol = 2)
@@ -299,16 +336,23 @@ prune_tree <- function(hc, k) {
 #'     \item{est.k}{integer, estimated number of clusters}
 #' }
 #'
-#' @importFrom uwot umap
 #' @import parallel
+#' @importFrom utils installed.packages
 #' @export
 sc_clustering.umap_kmeans <- function(exprs, Ks, type = c("count", "log"), estimate.k = FALSE,
-    subsample = F, subsample.ratio = 0.9, scale.factor = 10000, n.neighbors = 30,
-    n.components = 2, column.prefix = "umapkmeans_", n.cores = parallel::detectCores() -
-        4) {
-
-    if (!"ADPclust" %in% installed.packages()) {
+    subsample = FALSE, subsample.ratio = 0.9, scale.factor = 10000, n.neighbors = 30,
+    n.components = 2, column.prefix = "umapkmeans_", n.cores = 1) {
+    if (!"uwot" %in% utils::installed.packages()) {
+        install.packages("uwot")
+        if (!"uwot" %in% utils::installed.packages()) {
+            stop("Please install 'uwot' package")
+        }
+    }
+    if (!"ADPclust" %in% utils::installed.packages()) {
         install.packages("ADPclust")
+        if (!"ADPclust" %in% utils::installed.packages()) {
+            stop("Please install 'ADPclust' package")
+        }
     }
 
     type = match.arg(type)
@@ -337,7 +381,7 @@ sc_clustering.umap_kmeans <- function(exprs, Ks, type = c("count", "log"), estim
         labels.k = rep(NA, n)
         x = umap.out[ind, ]
         adp.out.k = ADPclust::adpclust(x, htype = "amise", centroids = "auto", nclust = k)
-        kmeans.out = kmeans(x, x[adp.out.k$centers, ], k)
+        kmeans.out = stats::kmeans(x, x[adp.out.k$centers, ], k)
         labels.k[ind] = kmeans.out$cluster
 
         return(labels.k)
@@ -345,7 +389,7 @@ sc_clustering.umap_kmeans <- function(exprs, Ks, type = c("count", "log"), estim
     colnames(labels) = paste0(column.prefix, "K", as.character(Ks))
 
     if (estimate.k) {
-        adp.out = ADPclust::adpclust(umap.out$layout, htype = "amise", centroids = "auto",
+        adp.out = ADPclust::adpclust(umap.out, htype = "amise", centroids = "auto",
             nclust = Ks)
         est.k = adp.out$nclust
     } else {
@@ -365,18 +409,23 @@ sc_clustering.umap_kmeans <- function(exprs, Ks, type = c("count", "log"), estim
 #' @param pure.prop the proportion of pure cells, SOUP parameter
 #' @param ext.prop the proportion of extreme neighbors for each cell, SOUP parameter
 #' @param scale.factor scalar sets the scale factor for cell-level normalization
+#' @param column.prefix string, output column prefix, default 'soup_'
 #'
 #' @return a list containing \describe{
 #'     \item{labelmat}{a data frame, columns are clusterings for each resolution specified}
 #'     \item{est.k}{integer, estimated number of clusters}
 #' }
 #'
+#' @importFrom utils installed.packages
 #' @export
 sc_clustering.soup <- function(exprs, Ks, type = c("count", "log"), estimate.k = FALSE,
     pure.prop = 0.5, ext.prop = NULL, scale.factor = 10000, column.prefix = "soup_") {
 
-    if (!"SOUP" %in% installed.packages()) {
+    if (!"SOUP" %in% utils::installed.packages()) {
         devtools::install_github("lingxuez/SOUP")
+        if (!"SOUP" %in% utils::installed.packages()) {
+            stop("Please install SOUP package from Github lingxuez/SOUP")
+        }
     }
 
     type = match.arg(type)
@@ -415,14 +464,19 @@ sc_clustering.soup <- function(exprs, Ks, type = c("count", "log"), estimate.k =
 #' @param estimate.k whether to estimate optimal number of clusters by SIMLR
 #' @param scale.factor scalar sets the scale factor for cell-level normalization
 #' @param cores.ratio ratio of total number of cores used for calculation
+#' @param column.prefix string, output column prefix, default 'simlr_'
 #' @return an SingleCellExperiment object containing all the clustering results
 #'
+#' @importFrom utils installed.packages
 #' @export
-sc_clustering.simlr <- function(exprs, Ks, type = c("count", "log"), estimate.k = F,
+sc_clustering.simlr <- function(exprs, Ks, type = c("count", "log"), estimate.k = FALSE,
     scale.factor = 10^4, cores.ratio = 0.9, column.prefix = "simlr_") {
 
-    if (!"SIMLR" %in% installed.packages()) {
+    if (!"SIMLR" %in% utils::installed.packages()) {
         BiocManager::install("SIMLR")
+        if (!"SIMLR" %in% utils::installed.packages()) {
+            stop("Please install SIMLR r package")
+        }
     }
 
     type = match.arg(type)
@@ -440,10 +494,10 @@ sc_clustering.simlr <- function(exprs, Ks, type = c("count", "log"), estimate.k 
     labels = sapply(Ks, function(k) {
         if (use.large.scale) {
             simlr.out = SIMLR::SIMLR_Large_Scale(exprs, c = k, cores.ratio = cores.ratio,
-                normalize = F)
+                normalize = FALSE)
         } else {
             # small scale
-            simlr.out = SIMLR::SIMLR(exprs, c = k, cores.ratio = cores.ratio, normalize = F)
+            simlr.out = SIMLR::SIMLR(exprs, c = k, cores.ratio = cores.ratio, normalize = FALSE)
         }
         simlr.out$y$cluster
     })
@@ -473,10 +527,10 @@ sc_clustering.simlr <- function(exprs, Ks, type = c("count", "log"), estimate.k 
 #' @param verbose boolean, whether to print messages
 #'
 #' @return an hclust object containing the clustering results
-#'
+#' @importFrom stats hclust prcomp dist
 #' @export
 sc_clustering.HAC <- function(exprs, n.pcs = 10, labels = NULL, method = "complete",
-    type = c("count", "log"), scale.factor = 10000, verbose = F) {
+    type = c("count", "log"), scale.factor = 10000, verbose = FALSE) {
 
     exprs = t(exprs)
 
@@ -487,19 +541,19 @@ sc_clustering.HAC <- function(exprs, n.pcs = 10, labels = NULL, method = "comple
     if (verbose) {
         message("Get first ", n.pcs, " PCs ...")
     }
-    x = prcomp(exprs)$x[, 1:n.pcs]
+    x = stats::prcomp(exprs)$x[, 1:n.pcs]
 
     if (!is.null(labels)) {
         labels = as.character(labels)
         message("Get ", length(unique(labels)), " cluster centers ..")
-        agg.out = aggregate(x, by = list(labels), FUN = mean)
+        agg.out = stats::aggregate(x, by = list(labels), FUN = mean)
         centers = agg.out[, -1]
         rownames(centers) = agg.out$Group.1
 
         if (verbose) {
             message("Get pairwise distance of centers ...")
         }
-        d = dist(centers)
+        d = stats::dist(centers)
 
         members = table(labels)[as.character(agg.out$Group.1)]
     } else {
@@ -515,7 +569,7 @@ sc_clustering.HAC <- function(exprs, n.pcs = 10, labels = NULL, method = "comple
         message("HAC with ", method, " linkage ..")
     }
 
-    hc.out = hclust(d, method = method, members = members)
+    hc.out = stats::hclust(d, method = method, members = members)
     hc.out$sample.labels = labels
 
     return(hc.out)

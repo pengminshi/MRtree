@@ -5,7 +5,7 @@
 \title{Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
 shown at each tree node, detailing the label proprotions.}
 \usage{
-plot_clustree(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = T, ...)
+plot_clustree(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = TRUE, ...)
 }
 \arguments{
 \item{labelmat}{clustering results saved in a label matrix n-by-number of partitions}
@@ -14,7 +14,9 @@ plot_clustree(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = T, ...)
 
 \item{ref.labels}{reference labels to be shown at each tree node}
 
-\item{plot.ref}{boolean wheather to color the tree node by the major type
+\item{plot.ref}{boolean wheather to color the tree node by the major type}
+
+\item{...}{other parameter to pass to clustree function
 according to reference labels}
 }
 \description{

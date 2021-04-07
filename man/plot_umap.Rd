@@ -50,8 +50,8 @@ embedding space.}
 }
 \value{
 A list of \describe{
-\item{p}{umap plot}
-\item{emb}{umap embedding matrix}
+ \item{p}{umap plot}
+ \item{emb}{umap embedding matrix}
 }
 }
 \description{

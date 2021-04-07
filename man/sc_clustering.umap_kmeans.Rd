@@ -9,13 +9,13 @@ sc_clustering.umap_kmeans(
   Ks,
   type = c("count", "log"),
   estimate.k = FALSE,
-  subsample = F,
+  subsample = FALSE,
   subsample.ratio = 0.9,
   scale.factor = 10000,
   n.neighbors = 30,
   n.components = 2,
   column.prefix = "umapkmeans_",
-  n.cores = parallel::detectCores() - 4
+  n.cores = 1
 )
 }
 \arguments{
@@ -43,8 +43,8 @@ sc_clustering.umap_kmeans(
 }
 \value{
 a list containing \describe{
-\item{labelmat}{a data frame, columns are clusterings for each resolution specified}
-\item{est.k}{integer, estimated number of clusters}
+    \item{labelmat}{a data frame, columns are clusterings for each resolution specified}
+    \item{est.k}{integer, estimated number of clusters}
 }
 }
 \description{

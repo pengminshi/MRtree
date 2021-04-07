@@ -4,12 +4,14 @@
 \alias{assign_samples_to_paths}
 \title{Assign data points to the viable path that are closest to the original clustering assignment}
 \usage{
-assign_samples_to_paths(labelmat, paths, n.cores = parallel::detectCores() - 1)
+assign_samples_to_paths(labelmat, paths, n.cores = NULL)
 }
 \arguments{
 \item{labelmat}{Initial multi-resolution cluster assignment, n-by-m, corresponding to m resolutions}
 
 \item{paths}{The viable paths}
+
+\item{n.cores}{Number of cores to use}
 }
 \value{
 A vector of length n containing the path index to which the data points are assigned to

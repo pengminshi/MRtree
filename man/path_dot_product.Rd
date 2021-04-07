@@ -6,6 +6,14 @@
 \usage{
 path_dot_product(paths1, paths2)
 }
+\arguments{
+\item{paths1}{first path matrix}
+
+\item{paths2}{second path matrix}
+}
+\value{
+matrix of path outer product
+}
 \description{
 outer product of path prefix and suffix
 }

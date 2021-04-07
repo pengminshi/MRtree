@@ -7,7 +7,7 @@
 unique_ind(A)
 }
 \arguments{
-\item{matrix}{A}
+\item{A}{matrix similarity matrix}
 }
 \value{
 a list of \describe{

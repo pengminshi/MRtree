@@ -6,6 +6,16 @@
 \usage{
 augment_path(paths, layers, aug.name = -1)
 }
+\arguments{
+\item{paths}{the viable tree paths, saved in a label matrix}
+
+\item{layers}{the layer index}
+
+\item{aug.name}{name of the augmented cluster}
+}
+\value{
+new paths after augmentation
+}
 \description{
 Augment the path to include on additional node as alternative to each layer
 }

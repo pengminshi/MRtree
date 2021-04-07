@@ -3,7 +3,7 @@
 \name{get_set_D_size}
 \alias{get_set_D_size}
 \title{get the size of set D, {pairs that are in different clusters in low resolution clustering but in the
-same cluster in high resolution clustering}}
+   same cluster in high resolution clustering}}
 \usage{
 get_set_D_size(labels.low.resolution, labels.high.resolution)
 }
@@ -17,5 +17,5 @@ a scalar of size of set D
 }
 \description{
 get the size of set D, {pairs that are in different clusters in low resolution clustering but in the
-same cluster in high resolution clustering}
+   same cluster in high resolution clustering}
 }

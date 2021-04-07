@@ -29,11 +29,13 @@ sc_clustering.soup(
 \item{ext.prop}{the proportion of extreme neighbors for each cell, SOUP parameter}
 
 \item{scale.factor}{scalar sets the scale factor for cell-level normalization}
+
+\item{column.prefix}{string, output column prefix, default 'soup_'}
 }
 \value{
 a list containing \describe{
-\item{labelmat}{a data frame, columns are clusterings for each resolution specified}
-\item{est.k}{integer, estimated number of clusters}
+    \item{labelmat}{a data frame, columns are clusterings for each resolution specified}
+    \item{est.k}{integer, estimated number of clusters}
 }
 }
 \description{

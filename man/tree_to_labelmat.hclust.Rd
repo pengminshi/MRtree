@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{tree}{hclust object representing a dendrogram}
+
+\item{Ks}{number of clusters per layer}
 }
 \value{
 a label matrix

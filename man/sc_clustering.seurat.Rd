@@ -15,9 +15,9 @@ sc_clustering.seurat(
   find.variable.features = T,
   npcs = 40,
   seurat.graph.algorithm = 1,
-  build.hierarchical.tree = F,
-  return.seurat.object = F,
-  verbose = F
+  build.hierarchical.tree = FALSE,
+  return.seurat.object = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -49,17 +49,17 @@ Louvain algorithm; 2 = Louvain algorithm with multilevel refinement; 3 = SLM alg
 \item{build.hierarchical.tree}{boolean, whether to build hierarchical tree using HAC
 from Seurat clusters with \code{max(resolution)}.}
 
-\item{return.seurat.object}{boolean, whether to return Seurat object}
+\item{return.seurat.object}{boolean, whether to return Seurat object. Save memory by setting it to False.}
 
 \item{verbose}{boolean, whether to print messages}
 }
 \value{
 a list containing \describe{
-\item{seurat.clusters}{a data frame containing all clustering as columns with
-prefix 'RNA_snn_res.'}
-\item{obj}{Seurat object before clustering is performed}
-\item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
-using Seurat clusters from \code{max(resolutions)}}
+    \item{seurat.clusters}{a data frame containing all clustering as columns with
+    prefix 'RNA_snn_res.'}
+    \item{obj}{Seurat object before clustering is performed}
+    \item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
+    using Seurat clusters from \code{max(resolutions)}}
 }
 }
 \description{

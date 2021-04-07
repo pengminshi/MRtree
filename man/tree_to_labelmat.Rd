@@ -8,6 +8,8 @@ tree_to_labelmat(tree, ...)
 }
 \arguments{
 \item{tree}{phylo object or hclust object}
+
+\item{...}{other parameters}
 }
 \description{
 Convert phylo_tree to label matrix

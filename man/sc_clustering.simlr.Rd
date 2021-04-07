@@ -8,7 +8,7 @@ sc_clustering.simlr(
   exprs,
   Ks,
   type = c("count", "log"),
-  estimate.k = F,
+  estimate.k = FALSE,
   scale.factor = 10^4,
   cores.ratio = 0.9,
   column.prefix = "simlr_"
@@ -26,6 +26,8 @@ sc_clustering.simlr(
 \item{scale.factor}{scalar sets the scale factor for cell-level normalization}
 
 \item{cores.ratio}{ratio of total number of cores used for calculation}
+
+\item{column.prefix}{string, output column prefix, default 'simlr_'}
 }
 \value{
 an SingleCellExperiment object containing all the clustering results

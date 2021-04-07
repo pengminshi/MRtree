@@ -1,37 +1,55 @@
-#' Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
-#' shown at each tree node, detailing the label proprotions.
+#' Plot MRtree results as hierarchical cluster tree.
 #'
-#' @param labelmat a n by m label matrix, in ouput of \code{mrtree} function, \code{labelmat.mrtree}
+#' Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
+#' shown at each tree node, giving the label proprotions for respective cluster.
+#'
+#' @param labelmat a n by m label matrix, provided by the ouput of \code{mrtree} function, \code{labelmat.mrtree}
 #' @param ref.labels a factor or characteristic vector specifying the reference labels of n data points
 #' @param show.ref.labels boolean, whether to show the labels of major type at tree nodes and tips
 #' @param label.order a vector specifying the order of labels for default colors
 #' @param node.size scalar, the size of the pie chart / node
-#' @param cols a vector of colors, one per each label
-#' @param plot.piechart boolean, whether to draw the pie chart in the tree plot
-#' @param tip.labels a vector of strings specifying the labels of tree leafs
+#' @param cols a vector of colors, one per each label. If not provided, use the default colors.
+#' @param plot.piechart boolean, whether to draw the pie chart for each tree node.
+#' @param tip.labels a vector of strings specifying the labels of tree leafs. The labels should align with the order of leaf in the plot.
 #' @param tip.label.dist distance of the tip labels to the tree tips
 #' @param show.branch.labels boolean, whether to show the branch labels for convenience of flipping branches
-#' @param fip.branch a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.
-#' @param legend.title string as legend title, default is an empty string
-#' @param bottom.margin size of the bottom margin, need to be adjusted to show the full labels
+#' @param flip.branch a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.
+#' @param legend.title string as legend title. Empty string by default.
+#' @param bottom.margin size of the bottom margin, need to be adjusted to show the full labels.
 #'
 #' @importFrom data.tree as.Node as.phylo.Node
 #' @importFrom ape Ntip Nnode
 #' @importFrom tibble as_tibble
 #' @importFrom tidytree full_join as.treedata
 #' @importFrom ggtree ggtree nodepie layout_dendrogram
+#' @import ggimage
 #' @export
-plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = T, label.order = NULL,
-    node.size = 0.2, cols = NULL, plot.piechart = T, tip.labels = NULL, tip.label.dist = 2,
-    show.branch.labels = F, flip.branch = NULL, legend.title = "", bottom.margin = 25) {
-
+plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = TRUE, label.order = NULL,
+    node.size = 0.2, cols = NULL, plot.piechart = TRUE, tip.labels = NULL, tip.label.dist = 4,
+    show.branch.labels = FALSE, flip.branch = NULL, legend.title = "", bottom.margin = 25) {
+    if (is.null(colnames(labelmat))) {
+        ks = apply(labelmat, 2, function(x) length(unique(x)))
+        colnames(labelmat) = paste0("K", ks)
+    }
+    if (length(unique(colnames(labelmat)))!=ncol(labelmat)) {
+        # repeated colnames
+        colnames(labelmat) = paste0("layer", 1:ncol(labelmat))
+        prefix = "layer"
+    }
     if (is.null(ref.labels)) {
-        ref.labels = rep("", nrow(labelmat))
-        show.ref.labels = F
-        draw.pie.chart = F
+        # creat the label using the clustering in last layer
+        ref.labels = paste0('C', labelmat[,ncol(labelmat)])
     } else {
         ref.labels = as.character(ref.labels)
         ref.labels = gsub("-", "_", ref.labels)
+        if (any(is.na(ref.labels))){
+            ref.labels[is.na(ref.labels)] = 'NA'
+        }
+        check_numeric = suppressWarnings(as.numeric(ref.labels))
+        if (any(!is.na(check_numeric))){
+            ind = which(!is.na(check_numeric)) # entries with numeric label
+            ref.labels[ind] = paste0('C', ref.labels[ind])
+        }
     }
 
     if (is.null(label.order)) {
@@ -63,13 +81,16 @@ plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = T, label.or
     tree.phylo = data.tree::as.phylo.Node(tree.datatree)
 
     # reference type per node
-    ord = data.frame(node = 1:(ape::Ntip(tree.phylo) + ape::Nnode(tree.phylo)), row.names = c(tree.phylo$tip.label,
-        tree.phylo$node.label))
+    if (any(duplicated(c(tree.phylo$tip.label,tree.phylo$node.label)))){
+        stop('Not an hierarchical tree structure')
+    }
+    ord = data.frame(node = 1:(ape::Ntip(tree.phylo) + ape::Nnode(tree.phylo)),
+                     row.names = c(tree.phylo$tip.label, tree.phylo$node.label))
     df = data.frame(labelmat = c(labelmat), ref.labels = rep(ref.labels, p))
-    df = rbind(df, data.frame(labelmat = "all", ref.labels))
+    df = rbind(df, data.frame(labelmat = "all", ref.labels = ref.labels))
 
     # calculate per type percentage
-    pct = aggregate(df$ref.labels, by = list(node = df$labelmat), FUN = function(x) {
+    pct = aggregate(as.factor(df$ref.labels), by = list(node = df$labelmat), FUN = function(x) {
         t = table(x)
         t/sum(t)
     })
@@ -108,7 +129,7 @@ plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = T, label.or
     } else {
         cols = gg_color_hue(length(label.order))  # approximate the default color
     }
-
+    suppressMessages({
     # plot the tree
     gg = ggtree::ggtree(tree.plot, size = 1) + ggtree::layout_dendrogram() + xlim(bottom.margin,
         -110)
@@ -147,11 +168,13 @@ plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = T, label.or
     }
 
     if (plot.piechart) {
+        requireNamespace("ggimage")
         pies = ggtree::nodepie(pct, cols = 1:(ncol(pct) - 1), color = cols[order(label.order)])
         pies = pies[c(issplit, isleaf)]
         piesize = nodesize$nodesize
-        gg = gg + ggtree::geom_inset(pies, reverse_x = T, height = piesize, width = piesize)
+        gg = gg + ggtree::geom_inset(pies, reverse_x = TRUE, height = piesize, width = piesize)
     }
+    })
 
     gg
 }
@@ -163,19 +186,26 @@ plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = T, label.or
 #' @param prefix string indicating columns containing clustering information
 #' @param ref.labels reference labels to be shown at each tree node
 #' @param plot.ref boolean wheather to color the tree node by the major type
+#' @param ... other parameter to pass to clustree function
 #' according to reference labels
 #'
 #' @importFrom clustree clustree
 #' @export
-plot_clustree <- function(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = T,
+plot_clustree <- function(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = TRUE,
     ...) {
-    library(ggraph)  # needed for guide_edge_colourbar to work (bug)
-    if (is.null(prefix) | is.null(labelmat)) {
-        colnames(labelmat) = paste0("K", ncol(labelmat))
-        prefix = "K"
+    require("ggraph")  # needed for guide_edge_colourbar to work (bug)
+    if (is.null(prefix) | is.null(colnames(labelmat))) {
+        colnames(labelmat) = paste0("layer", 1:ncol(labelmat))
+        prefix = "layer"
     }
 
-    if (class(labelmat) != "data.frame")
+    if (length(unique(colnames(labelmat)))!=ncol(labelmat)) {
+        # repeated colnames
+        colnames(labelmat) = paste0("layer", 1:ncol(labelmat))
+        prefix = "layer"
+    }
+
+    if (class(labelmat)[1] != "data.frame")
         labelmat = as.data.frame(labelmat)
 
     if (plot.ref == T & is.null(ref.labels)) {
@@ -234,7 +264,7 @@ getmode <- function(v) {
 plot_umap <- function(X = NULL, labels = NULL, pca = 50, n_components = 2, n_neighbors = 30,
     min_dist = 0.1, point.size = 0.3, alpha = 1, title = NULL, legend.name = "labels",
     cols = NULL, emb = NULL, seed = 0) {
-    library(ggplot2)
+    requireNamespace("ggplot2")
 
     if (is.null(X) & is.null(emb)) {
         stop("data not provided!")
@@ -280,11 +310,11 @@ plot_umap <- function(X = NULL, labels = NULL, pca = 50, n_components = 2, n_nei
 #' Generate colors that approximate the default ggplot colors
 #'
 #' @param  n integer, number of colors
-#'
+#' @importFrom grDevices hcl
 #' @return a vector of length n, of strings giving n colors
 gg_color_hue <- function(n) {
     hues = seq(15, 375, length = n + 1)
-    hcl(h = hues, l = 65, c = 100)[1:n]
+    grDevices::hcl(h = hues, l = 65, c = 100)[1:n]
 }
 
 
@@ -298,20 +328,20 @@ gg_color_hue <- function(n) {
 #' @param xlab x axis label
 #' @param ylab y axis label
 #'
-#' @import ggplot2
+#' @import ggplot2 checkmate
 #' @importFrom reshape2 melt
 #'
 #' @return ggplot object
 plotContTable <- function(est_label, true_label, true_label_order = NULL, est_label_order = NULL,
     short.names = NULL, xlab = "Reference", ylab = NULL) {
 
-    library(ggplot2)
+    requireNamespace("ggplot2")
     if (!is.null(true_label_order)) {
-        assertthat::assert_that(all(sort(unique(true_label)) == sort(true_label_order)))
+        checkmate::assert_true(all(sort(unique(true_label)) == sort(true_label_order)))
         true_label = factor(true_label, levels = true_label_order)
     }
     if (!is.null(est_label_order)) {
-        assertthat::assert_that(all(sort(unique(est_label)) == sort(est_label_order)))
+        checkmate::assert_true(all(sort(unique(est_label)) == sort(est_label_order)))
         # est_label = factor(est_label, levels=est_label_order)
     }
     if (is.null(short.names)) {
@@ -333,7 +363,7 @@ plotContTable <- function(est_label, true_label, true_label_order = NULL, est_la
     dat3 <- reshape2::melt(cont.table, id.var = "Reference")
     grid.labels = as.character(dat3$value)
     grid.labels[grid.labels == "0"] = ""
-    g <- ggplot(dat3, aes(Reference, variable)) + geom_tile(aes(fill = value)) +
+    g <- ggplot(dat3, aes(x = Reference, y = variable)) + geom_tile(aes(fill = value)) +
         geom_text(aes(label = grid.labels), size = 4.5) + scale_fill_gradient(low = "white",
         high = "purple") + labs(y = ylab, x = xlab) + theme(panel.background = element_blank(),
         axis.line = element_blank(), axis.text.x = element_text(size = 13, angle = 90),

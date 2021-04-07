@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{tree}{phylo tree}
+
+\item{Ks}{number of clusters per layer}
 }
 \value{
 a label matrix

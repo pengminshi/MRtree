@@ -11,8 +11,8 @@ construct_tree_from_labelmat(labelmat)
 }
 \value{
 tree saved as an edge list containing \describe{
-\item{start}{label of start node}
-\item{end}{label of end node}
+    \item{start}{label of start node}
+    \item{end}{label of end node}
 }
 }
 \description{

@@ -2,15 +2,13 @@
 % Please edit documentation in R/sc_simulation_functions.R
 \name{random_tree}
 \alias{random_tree}
-\title{Generate a random tree with given number of tips}
+\title{Generate a random tree with even number of tips}
 \usage{
 random_tree(n)
 }
 \arguments{
 \item{n}{number of tips}
-
-\item{a}{phylo object of the generated tree}
 }
 \description{
-Generate a random tree with given number of tips
+Generate a random tree with even number of tips
 }

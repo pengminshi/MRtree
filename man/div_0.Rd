@@ -6,6 +6,11 @@
 \usage{
 div_0(A, B)
 }
+\arguments{
+\item{A}{enumerator}
+
+\item{B}{denominator}
+}
 \description{
 pointwise division of matrices such that 0/0=0
 }

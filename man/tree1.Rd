@@ -4,15 +4,15 @@
 \alias{tree1}
 \title{Generate tree structure}
 \usage{
-tree1(plot = F)
+tree1(plot = FALSE)
 }
 \arguments{
-\item{boolean, }{whether to generate plot}
+\item{plot}{boolean, whether to generate plot}
 }
 \value{
 A list containing \describe{
-\item{phylo.tree}{Generated tree saved in a phylo object}
-\item{fig}{figure that shows the tree structure}
+    \item{phylo.tree}{Generated tree saved in a phylo object}
+    \item{fig}{figure that shows the tree structure}
 }
 }
 \description{

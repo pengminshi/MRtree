@@ -10,9 +10,9 @@
 #'
 #' @return a vector of length \code{n.res}, sampled resolution parameters.
 #'
-#' @import checkmate
+#' @importFrom checkmate assert_true
 #' @export
-modularity_event_sampling <- function(A, n.res, gamma.min = NULL, gamma.max = NULL,
+modularity_event_sampling <- function(A, n.res, gamma.min = NULL, gamma.max = NULL, 
     subsample = 200) {
 
     if (class(A) != "matrix") {
@@ -55,7 +55,7 @@ modularity_event_sampling <- function(A, n.res, gamma.min = NULL, gamma.max = NU
         }
     }
 
-    b_sample = (g_sample * (Psum - Pp) - (Asum - Ap))/(g_sample * (Psum - 2 * Pp) +
+    b_sample = (g_sample * (Psum - Pp) - (Asum - Ap))/(g_sample * (Psum - 2 * Pp) + 
         (2 * Ap - Asum))
 
     # remove the gamma change point that corresponds to the same beta
@@ -65,11 +65,11 @@ modularity_event_sampling <- function(A, n.res, gamma.min = NULL, gamma.max = NU
     Pp = Pp[unique.idx]
     Ap = Ap[unique.idx]
 
-    bmin = (gamma.min * grid_interpolant_next(gamma.min, g_sample, Psum - Pp) - grid_interpolant_next(gamma.min,
-        g_sample, Asum - Ap))/(gamma.min * grid_interpolant_next(gamma.min, g_sample,
+    bmin = (gamma.min * grid_interpolant_next(gamma.min, g_sample, Psum - Pp) - grid_interpolant_next(gamma.min, 
+        g_sample, Asum - Ap))/(gamma.min * grid_interpolant_next(gamma.min, g_sample, 
         Psum - 2 * Pp) + grid_interpolant_next(gamma.min, g_sample, 2 * Ap - Asum))
-    bmax = (gamma.max * grid_interpolant_next(gamma.max, g_sample, Psum - Pp) - grid_interpolant_next(gamma.max,
-        g_sample, Asum - Ap))/(gamma.max * grid_interpolant_next(gamma.max, g_sample,
+    bmax = (gamma.max * grid_interpolant_next(gamma.max, g_sample, Psum - Pp) - grid_interpolant_next(gamma.max, 
+        g_sample, Asum - Ap))/(gamma.max * grid_interpolant_next(gamma.max, g_sample, 
         Psum - 2 * Pp) + grid_interpolant_next(gamma.max, g_sample, 2 * Ap - Asum))
     bgrid = seq(from = bmin, to = bmax, length.out = n.res)
 
@@ -78,7 +78,7 @@ modularity_event_sampling <- function(A, n.res, gamma.min = NULL, gamma.max = NU
     Aminus = grid_interpolant_next(grid = bgrid, x = b_sample, y = Asum - Ap)
     Aplus = grid_interpolant_next(grid = bgrid, x = b_sample, y = Ap)
 
-    gammas = (Aminus + bgrid * (Aplus - Aminus))/((1 - bgrid) * Pminus + bgrid *
+    gammas = (Aminus + bgrid * (Aplus - Aminus))/((1 - bgrid) * Pminus + bgrid * 
         Pplus)
 
     return(gammas)
@@ -116,7 +116,7 @@ exponential_sampling <- function(n.res, res.min = 0.001, res.max = 3, base = 2) 
         stop("Error: res.min should > 0!")
     }
 
-    res_log = seq(from = log(res.min, base = base), to = log(res.max, base = base),
+    res_log = seq(from = log(res.min, base = base), to = log(res.max, base = base), 
         length.out = n.res)
     return(base^res_log)
 }
@@ -124,6 +124,10 @@ exponential_sampling <- function(n.res, res.min = 0.001, res.max = 3, base = 2) 
 
 
 #' pointwise division of matrices such that 0/0=0
+#'
+#' @param A enumerator
+#' @param B denominator
+#'
 div_0 <- function(A, B) {
 
     Btmp = B
@@ -134,7 +138,7 @@ div_0 <- function(A, B) {
 
 #' Get the unique values in the matrix
 #'
-#' @param matrix A
+#' @param A matrix similarity matrix
 #'
 #' @return a list of \describe{
 #' \item{C}{sorted unique values (increaing order)}
@@ -208,17 +212,22 @@ modularity <- function(A, gamma = 1) {
 
 
 
-#' get the nearest neighbor graph using Seurat
+#' Get the nearest neighbor graph using Seurat
 #'
 #' @param counts ncell by ngene count matrix
 #' @param metadata a dataframe of meta data of cells
-#' @param npc principal components for constructing the nearest neighbor graph
+#' @param npcs principal components for constructing the nearest neighbor graph
 #'
 #' @return nearest neighbor graph saved as an adjacency matrix
 #' @export
-seurat_get_nn_graph <- function(counts, metadata = NULL, npcs = 10, ...) {
+seurat_get_nn_graph <- function(counts, metadata = NULL, npcs = 10) {
 
-    require(Seurat, quietly = T)
+    if (!requireNamespace("Seurat", quietly = TRUE)) {
+        install.packages("Seurat")
+        if (!requireNamespace("Seurat", quietly = TRUE)) {
+            stop("Please install Seurat R package!")
+        }
+    }
 
     min.cells = 0
     min.features = 0
@@ -228,33 +237,33 @@ seurat_get_nn_graph <- function(counts, metadata = NULL, npcs = 10, ...) {
     verbose = F
 
     # create the seurat object
-    obj = CreateSeuratObject(counts = counts, project = "seurat object", meta.data = metadata,
+    obj = CreateSeuratObject(counts = counts, project = "seurat object", meta.data = metadata, 
         min.cells = min.cells, min.features = min.features)
 
     # normalizing data
-    obj = NormalizeData(obj, normalization.method = "LogNormalize", scale.factor = scale.factor,
+    obj = NormalizeData(obj, normalization.method = "LogNormalize", scale.factor = scale.factor, 
         verbose = verbose)
 
     # get highly variable genes
     if (find.variable.features == 1) {
-        obj = FindVariableFeatures(obj, selection.method = "mean.var.plot", mean.cutoff = c(0.0125,
+        obj = FindVariableFeatures(obj, selection.method = "mean.var.plot", mean.cutoff = c(0.0125, 
             3), dispersion.cutoff = c(0.5, Inf), verbose = verbose)
-        if (verbose)
+        if (verbose) 
             message("Selected ", length(VariableFeatures(object = obj)), " highly variable genes by mean.var.plot.")
     } else if (find.variable.features > 1) {
-        obj = FindVariableFeatures(obj, selection.method = "vst", nfeatures = find.variable.features,
+        obj = FindVariableFeatures(obj, selection.method = "vst", nfeatures = find.variable.features, 
             verbose = verbose)  # select given number of genes
-        if (verbose)
+        if (verbose) 
             message("Selected ", length(VariableFeatures(object = obj)), " highly variable genes by mean.var.plot.")
     } else {
-        obj = FindVariableFeatures(obj, selection.method = "vst", nfeatures = nrow(obj),
+        obj = FindVariableFeatures(obj, selection.method = "vst", nfeatures = nrow(obj), 
             verbose = verbose)  # select all the genes
     }
 
     # using linear model to remove the effects of covariates center and scale by gene
     obj = ScaleData(obj, vars.to.regress = vars.to.regress, verbose = verbose)
 
-
+    
     obj = RunPCA(obj, features = VariableFeatures(object = obj), npcs = npcs, verbose = verbose)
 
     # run Seurat clustering

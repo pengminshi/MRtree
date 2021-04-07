@@ -13,9 +13,9 @@ table_to_edgelist(labels.start, labels.end)
 }
 \value{
 and edge list \describe{
-\item{start}{label of start node}
-\item{end}{label of end node}
-\item{count}{number of data points in the edge}
+    \item{start}{label of start node}
+    \item{end}{label of end node}
+    \item{count}{number of data points in the edge}
 }
 }
 \description{

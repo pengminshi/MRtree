@@ -11,7 +11,7 @@ sc_clustering.HAC(
   method = "complete",
   type = c("count", "log"),
   scale.factor = 10000,
-  verbose = F
+  verbose = FALSE
 )
 }
 \arguments{

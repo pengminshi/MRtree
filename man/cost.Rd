@@ -13,6 +13,8 @@ cost(node.start, node.end, paths, labelmat, labelmat.in.paths, sample_weights)
 
 \item{paths}{viable path}
 
+\item{labelmat}{label matrix of the samples}
+
 \item{labelmat.in.paths}{assigned labels of data points to the optimimum paths}
 
 \item{sample_weights}{weights per sample (clustering) used in loss function (all ones by default)}

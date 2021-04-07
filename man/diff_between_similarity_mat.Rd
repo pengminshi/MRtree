@@ -13,7 +13,7 @@ diff_between_similarity_mat(sim.mat1, sim.mat2)
 \item{sim.mat2}{second similarity matrix}
 }
 \value{
-
+scalar L1 distance between the two similarity matrix
 }
 \description{
 Calculate the L1 distance between two similarity matrix.

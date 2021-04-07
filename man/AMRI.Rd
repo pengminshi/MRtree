@@ -13,8 +13,8 @@ AMRI(labels1, labels2)
 }
 \value{
 A list containing \describe{
-\item{mri}{scalar, calculated Mutlti-resolution Rand Index}
-\item{amri}{MRI adjusted for chance based on permutation model.}
+    \item{mri}{scalar, calculated Mutlti-resolution Rand Index}
+    \item{amri}{MRI adjusted for chance based on permutation model.}
 }
 }
 \description{

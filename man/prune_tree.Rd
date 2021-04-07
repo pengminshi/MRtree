@@ -13,9 +13,9 @@ prune_tree(hc, k)
 }
 \value{
 a list containing \describe{
-\item{hc}{a hclust object of pruned dendrogram}
-\item{labels}{a vector of length n, cluster labels obtained at the specified
-tree cut}
+    \item{hc}{a hclust object of pruned dendrogram}
+    \item{labels}{a vector of length n, cluster labels obtained at the specified
+    tree cut}
 }
 }
 \description{

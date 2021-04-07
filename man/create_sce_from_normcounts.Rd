@@ -9,9 +9,9 @@ create_sce_from_normcounts(normcounts, col.data, row.data = NULL)
 \arguments{
 \item{normcounts}{gene-by-cell matrix of normalized expressions}
 
-\item{colData}{a dataframe containing cell informations}
+\item{col.data}{a dataframe containing cell informations}
 
-\item{rowData}{a dataframe containing gene informations}
+\item{row.data}{a dataframe containing gene informations}
 }
 \value{
 a SingleCellExperiment object

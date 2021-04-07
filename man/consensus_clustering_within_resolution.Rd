@@ -7,7 +7,7 @@
 consensus_clustering_within_resolution(
   labelmat,
   ks = NULL,
-  sample.weighted = F,
+  sample.weighted = FALSE,
   n.cores = NULL
 )
 }
@@ -15,6 +15,8 @@ consensus_clustering_within_resolution(
 \item{labelmat}{n-by-m sample by clustering label matrix}
 
 \item{ks}{vector of length m, number of clustering for each clustering}
+
+\item{sample.weighted}{boolean, whether adding weights to samples}
 
 \item{n.cores}{maximum number of cores used for parallel computation}
 }

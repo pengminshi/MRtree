@@ -12,12 +12,12 @@
 #'     \item{amri}{MRI adjusted for chance based on permutation model.}
 #' }
 #'
-#' @import checkmate
+#' @importFrom checkmate assert_true
 #'
 #' @export
 AMRI <- function(labels1, labels2) {
 
-    checkmate::assertTRUE(length(labels1) == length(labels2))
+    checkmate::assert_true(length(labels1) == length(labels2))
 
     labels1 = as.character(labels1)
     labels2 = as.character(labels2)
@@ -33,7 +33,7 @@ AMRI <- function(labels1, labels2) {
         diff.size = get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1)
     } else {
         # k1=k2
-        diff.size = (get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2) +
+        diff.size = (get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2) + 
             get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1))/2
     }
     mri = 1 - diff.size/n/(n - 1) * 2
@@ -70,7 +70,7 @@ get_set_D_size <- function(labels.low.resolution, labels.high.resolution) {
             ind2 = which(labels.low.resolution == class.low[k2])
             ind = c(ind1, ind2)
 
-            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by = list(labels.low.resolution[ind]),
+            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by = list(labels.low.resolution[ind]), 
                 FUN = table)
             if (length(agg.out$Group.1) > 1) {
                 size = size + sum(apply(matrix(c(agg.out[, -1]), nrow = 2), 2, prod))
@@ -96,19 +96,19 @@ expected_MRI_perm <- function(labels1, labels2) {
     k1 = length(unique(labels1))
     k2 = length(unique(labels2))
 
-    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x *
+    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x * 
         (x - 1)/2))/n/(n - 1) * 2
-    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x *
+    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x * 
         (x - 1)/2))/n/(n - 1) * 2
 
-
+    
     if (k1 < k2) {
         diff.prob = (1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2
     } else if (k1 > k2) {
         diff.prob = prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2)
     } else {
         # k1==k2
-        diff.prob = ((1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2 +
+        diff.prob = ((1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2 + 
             prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2))/2
     }
 
@@ -135,12 +135,12 @@ stability_plot <- function(out, index.name = "ari") {
     if (!index.name %in% c("ari", "amri")) {
         stop("Index can only be 'ari' or 'amri'")
     }
-    diff = get_index_per_layer(labelmat1 = out$labelmat.flat, labelmat2 = out$labelmat.recon,
+    diff = get_index_per_layer(labelmat1 = out$labelmat.flat, labelmat2 = out$labelmat.recon, 
         index.name = index.name)
-    df = aggregate(diff, by = list(k = apply(out$labelmat.flat, 2, FUN = function(x) length(unique(x)))),
+    df = aggregate(diff, by = list(k = apply(out$labelmat.flat, 2, FUN = function(x) length(unique(x)))), 
         FUN = mean)
 
-    p = ggplot2::ggplot(data = df, aes(x = k, y = x)) + geom_line() + theme_bw() +
+    p = ggplot2::ggplot(data = df, aes(x = k, y = x)) + geom_line() + theme_bw() + 
         labs(x = "resolutions (K)", y = paste0(toupper(index.name), " between flat clusterings and MRtree"))
     colnames(df) = c("resolution", index.name)
 
@@ -155,7 +155,7 @@ stability_plot <- function(out, index.name = "ari") {
 #' 'ami','amri')
 #'
 #' @return a numeric vector of length m, index per layer
-#' @import checkmate
+#' @importFrom checkmate assert_true
 #' @export
 get_index_per_layer <- function(labelmat1, labelmat2, index.name = "ari") {
 
@@ -168,7 +168,7 @@ get_index_per_layer <- function(labelmat1, labelmat2, index.name = "ari") {
         labelmat2 = matrix(labelmat2, ncol = 1)
     }
 
-    checkmate::assertTRUE(ncol(labelmat1) == ncol(labelmat2))
+    checkmate::assert_true(ncol(labelmat1) == ncol(labelmat2))
 
     out = sapply(1:ncol(labelmat1), function(i) {
         get_index(labels1 = labelmat1[, i], labels2 = labelmat2[, i], index.name = index.name)
@@ -204,7 +204,7 @@ get_index <- function(labels1, labels2, index.name = c("ari", "hamming", "ami", 
     index.name = match.arg(index.name)
 
     if (index.name == "hamming") {
-        hamming.distance(abels1, labels2)
+        hamming.distance(labels1, labels2)
     } else if (index.name == "ari") {
         adjustedRandIndex(labels1, labels2)
     } else if (index.name == "amri") {
@@ -226,12 +226,12 @@ adjustedRandIndex <- function(x, y) {
     x <- as.vector(x)
     y <- as.vector(y)
 
-    if (length(x) != length(y))
+    if (length(x) != length(y)) 
         stop("arguments must be vectors of the same length")
 
     tab <- table(x, y)
 
-    if (all(dim(tab) == c(1, 1)))
+    if (all(dim(tab) == c(1, 1))) 
         return(1)
 
     a <- sum(choose(tab, 2))
@@ -239,7 +239,7 @@ adjustedRandIndex <- function(x, y) {
     c <- sum(choose(colSums(tab), 2)) - a
     d <- choose(sum(tab), 2) - a - b - c
 
-    ARI <- (a - (a + b) * (a + c)/(a + b + c + d))/((a + b + a + c)/2 - (a + b) *
+    ARI <- (a - (a + b) * (a + c)/(a + b + c + d))/((a + b + a + c)/2 - (a + b) * 
         (a + c)/(a + b + c + d))
 
     return(ARI)
@@ -284,10 +284,10 @@ hamming.distance <- function(x, y) {
 #' @return a n-by-n similarity matrix showing the similarity between samples
 #' given the labels and the tree structure of labels
 #' @importFrom ape cophenetic.phylo
-#' @import checkmate
+#' @importFrom checkmate assert_true
 get_similarity_from_tree <- function(tree, labels) {
     # check the labels are in the tree tip
-    checkmate::assertTRUE(all(labels %in% tree$tip.label))
+    checkmate::assert_true(all(labels %in% tree$tip.label))
 
     labels.onehot = label_onehot(labels)
     class.dist.mat = ape::cophenetic.phylo(tree)[colnames(labels.onehot), colnames(labels.onehot)]
@@ -319,7 +319,7 @@ get_similarity_from_labelmat <- function(labelmat) {
 #' @param sim.mat1 first similarity matrix
 #' @param sim.mat2 second similarity matrix
 #'
-#' @return
+#' @return scalar L1 distance between the two similarity matrix
 diff_between_similarity_mat <- function(sim.mat1, sim.mat2) {
     n = nrow(sim.mat1)
     diff = sum(abs(sim.mat1 - sim.mat2))/n/n
@@ -343,7 +343,7 @@ label_onehot <- function(labels, K = NULL) {
     if (is.null(K)) {
         K = length(types)
     } else {
-        checkmate::assertTRUE(n.types <= K)
+        checkmate::assert_true(n.types <= K)
     }
 
     n = length(labels)
@@ -363,6 +363,7 @@ label_onehot <- function(labels, K = NULL) {
 #' Convert phylo_tree to label matrix
 #'
 #' @param tree phylo object or hclust object
+#' @param ... other parameters
 tree_to_labelmat <- function(tree, ...) {
     UseMethod("tree_to_labelmat", tree)
 }
@@ -371,6 +372,7 @@ tree_to_labelmat <- function(tree, ...) {
 #' Convert phylo tree to labelmatrix
 #'
 #' @param tree phylo tree
+#' @param Ks number of clusters per layer
 #'
 #' @return a label matrix
 #'
@@ -397,6 +399,7 @@ tree_to_labelmat.phylo <- function(tree, Ks = NULL) {
 #' Convert hclust tree to label matrix
 #'
 #' @param tree hclust object representing a dendrogram
+#' @param Ks number of clusters per layer
 #'
 #' @return a label matrix
 #' @importFrom dendextend cutree

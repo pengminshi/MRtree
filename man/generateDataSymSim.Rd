@@ -10,7 +10,7 @@ generateDataSymSim(
   tree,
   params = NULL,
   seed = 42,
-  plot.tsne = F,
+  plot.tsne = FALSE,
   ...
 )
 }
@@ -23,19 +23,21 @@ generateDataSymSim(
 
 \item{params}{a list containing the simulation parameters used in SymSim}
 
+\item{seed}{random seed}
+
 \item{plot.tsne}{boolean whether to generate tsne plot}
 
 \item{...}{other parameters passed to SymSim function}
 }
 \value{
 A list of \describe{
-\item{count}{ncell-by-ngene count matrix}
-\item{params}{simulation parameters}
-\item{true_counts}{ncell-by-ngene count matrix without noise and dropouts}
-\item{gene_len}{}
-\item{tsne_true_counts}{tSNE plot of the true counts}
-\item{tsne_UMI_counts}{tSNE plot of the simulated observed counts}
-\item{metadata}{Information of the cells}
+    \item{count}{ncell-by-ngene count matrix}
+    \item{params}{simulation parameters}
+    \item{true_counts}{ncell-by-ngene count matrix without noise and dropouts}
+    \item{gene_len}{}
+    \item{tsne_true_counts}{tSNE plot of the true counts}
+    \item{tsne_UMI_counts}{tSNE plot of the simulated observed counts}
+    \item{metadata}{Information of the cells}
 }
 }
 \description{

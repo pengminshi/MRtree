@@ -11,8 +11,8 @@ decode(node.name)
 }
 \value{
 A list \describe{
-\item{layer}{the layer in the tree the node belongs to}
-\item{label}{the label of the cluster in the layer the node belongs to}
+    \item{layer}{the layer in the tree the node belongs to}
+    \item{label}{the label of the cluster in the layer the node belongs to}
 }
 }
 \description{

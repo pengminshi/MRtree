@@ -10,9 +10,9 @@ sc_clustering.sc3(
   type = c("counts", "normcounts"),
   colData = NULL,
   rowData = NULL,
-  estimate.k = F,
+  estimate.k = FALSE,
   scale.factor = 10000,
-  build.hierarchical.tree = F,
+  build.hierarchical.tree = FALSE,
   ...
 )
 }
@@ -37,9 +37,9 @@ sc_clustering.sc3(
 }
 \value{
 a list containing \describe{
-\item{sce}{an SingleCellExperiment object containing all the clustering results}
-\item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
-using obtained by SC3}
+    \item{sce}{an SingleCellExperiment object containing all the clustering results}
+    \item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
+    using obtained by SC3}
 }
 }
 \description{

@@ -2,20 +2,20 @@
 % Please edit documentation in R/resolution.R
 \name{seurat_get_nn_graph}
 \alias{seurat_get_nn_graph}
-\title{get the nearest neighbor graph using Seurat}
+\title{Get the nearest neighbor graph using Seurat}
 \usage{
-seurat_get_nn_graph(counts, metadata = NULL, npcs = 10, ...)
+seurat_get_nn_graph(counts, metadata = NULL, npcs = 10)
 }
 \arguments{
 \item{counts}{ncell by ngene count matrix}
 
 \item{metadata}{a dataframe of meta data of cells}
 
-\item{npc}{principal components for constructing the nearest neighbor graph}
+\item{npcs}{principal components for constructing the nearest neighbor graph}
 }
 \value{
 nearest neighbor graph saved as an adjacency matrix
 }
 \description{
-get the nearest neighbor graph using Seurat
+Get the nearest neighbor graph using Seurat
 }

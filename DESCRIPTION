@@ -5,17 +5,40 @@ Authors@R:
     person(given = "Minshi",
            family = "Peng",
            role = c("aut", "cre"),
-           email = "minship@andrew.cmu.edu",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           email = "minship@andrew.cmu.edu")
 Description: Build hierarchical cluster tree by reconciling the flat clustering at multiple scales.
-License: `use_mit_license()`
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
-Depends: 
-    R (>= 2.10)
+Imports:
+    parallel,
+    checkmate,
+    utils,
+    RSpectra,
+    ape,
+    dendextend,
+    data.tree,
+    tibble,
+    tidytree,
+    ggplot2,
+    ggtree,
+    ggimage,
+    clustree,
+    reshape2,
+    yaml,
+    Seurat,
+    SingleCellExperiment,
+    SymSim,
+    uwot,
+    grDevices
+Depends:
+    R (>= 3.6.0)
+Remotes:
+    YosefLab/SymSim
+RoxygenNote: 7.1.1
+Config/testthat/edition: 3

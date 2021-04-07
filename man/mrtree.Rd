@@ -6,39 +6,32 @@
 \alias{mrtree.data.frame}
 \alias{mrtree.SingleCellExperiment}
 \alias{mrtree.Seurat}
-\title{MRtree main function}
+\title{Muti-resolution reconciled tree (MRtree)}
 \usage{
 mrtree(x, ...)
 
 \method{mrtree}{matrix}(
-  labelmat,
+  x,
   prefix = NULL,
   suffix = NULL,
   max.k = Inf,
-  consensus = F,
-  sample.weighted = F,
-  augment.path = F,
-  verbose = F,
-  n.cores = parallel::detectCores() - 1
+  consensus = FALSE,
+  sample.weighted = FALSE,
+  augment.path = FALSE,
+  verbose = FALSE,
+  n.cores = 1
 )
 
-\method{mrtree}{data.frame}(x, prefix, suffix = NULL, ...)
+\method{mrtree}{data.frame}(x, prefix = NULL, suffix = NULL, ...)
 
 \method{mrtree}{SingleCellExperiment}(x, prefix = "sc3_", suffix = "_clusters", ...)
 
 \method{mrtree}{Seurat}(x, prefix = "RNA_snn_res.", suffix = NULL, ...)
 }
 \arguments{
-\item{x}{object containing multi-resolution clustering results
-\strong{data source}
-building a reconciled hierarchical clustering tree requires information about which cluster each sample has been assinged
-to at different resolutions. This information can be supplied in various forms, as a matrix, data.frame or more specialised
-object. In all cases the object provided must contain numeric columns with the naming structure \code{PXS} where \code{P} is
-a prefix indicating that the column contains clustering information, \code{X} is a numeric value indicating the clustering
-resolution and \code{S} is any additional suffix to be removed. For \code{SingleCellExperiment} objects this information must
-be in the \code{colData} slot and for \code{Seurat} objects it must be in the \code{meta.data} slot. For all objects except matrices
-any additional columns can be used as aesthetics, for matrices an additional metadata data.frame can be supplied if
-required.}
+\item{x}{Seurat object}
+
+\item{...}{other parameters}
 
 \item{prefix}{srting indicating columns containing clustering information}
 
@@ -48,19 +41,31 @@ required.}
 
 \item{consensus}{boolean, whether to perform consensus clustering within the clusterings with the same number of clusters.}
 
-\item{verbose}{boolean, whether to show logmsgs}
+\item{sample.weighted}{boolean, whether to weight the samples by the size of clusters, where higher weight is given to rare clusters. False by default.}
 
-\item{n.cores}{integer, number of cores for parallel computation}
+\item{augment.path}{boolean, whether to augment one NA cluster in each layer to avoid shrinking the width of the tree with clustering alternate across layers. This will dramatically increase the running time. False by default.}
+
+\item{verbose}{boolean, whether to show running messages. False by default.}
+
+\item{n.cores}{integer, number of cores for parallel computation. 1 core by default.}
 }
 \value{
 A list containing  \describe{
-\item{labelmat.mrtree}{The Reconciled tree saved as a label matrix, with duplicated layers omited.}
-\item{labelmat.recon}{The full reconciled tree save in a label matrix}
-\item{labelmat.flat}{The initial flat clustering (cluster tree) as input for MRtree algorithm}
-\item{resolutions}{The corresponding clustering resolution of the initial cluster tree}
-\item{paths}{The unique path in the resulted reconciled hierarchical cluster tree}
+  \item{labelmat.mrtree}{The Reconciled tree saved as a label matrix, with duplicated layers omited.}
+  \item{labelmat.recon}{The full reconciled tree save in a label matrix}
+  \item{labelmat.flat}{The initial flat clustering (cluster tree) as input for MRtree algorithm}
+  \item{resolutions}{The corresponding clustering resolution of the initial cluster tree}
+  \item{paths}{The unique path in the resulted reconciled hierarchical cluster tree}
 }
 }
 \description{
-The multi-resolution clusters is input into \code{mrtree}, and the output is the constructed hierarchical cluster tree.
+The method take as input the flat clusterings obtained across multiple resolution parameters. It reconcil the clusterings to produce a hierarchical cluster tree structure.
+
+\code{mrtree} with label saved in a matrix as input
+
+\code{mrtree} with labelmatrix save as a data frame as input
+
+\code{mrtree} with SingleCellExperiment object as input
+
+\code{mrtree} with Seurat object as input
 }
