@@ -23,3 +23,6 @@ according to reference labels}
 Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
 shown at each tree node, detailing the label proprotions.
 }
+\examples{
+plot_clustree(labelmat = clust_example$clusterings, ref.labels = clust_example$ref.labels)
+}

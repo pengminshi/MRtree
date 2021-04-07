@@ -51,3 +51,8 @@ plot_tree(
 Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
 shown at each tree node, giving the label proprotions for respective cluster.
 }
+\examples{
+data("clust_example")
+out = mrtree(clust_example$clusterings)
+plot_tree(labelmat = out$labelmat.mrtree, ref.labels = clust_example$ref.labels, plot.piechart = TRUE)
+}

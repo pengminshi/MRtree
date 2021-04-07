@@ -69,3 +69,24 @@ The method take as input the flat clusterings obtained across multiple resolutio
 
 \code{mrtree} with Seurat object as input
 }
+\examples{
+data("clust_example")
+# matrix as input
+out = mrtree(clust_example$clusterings)
+# out$labelmat.mrtree
+# data frame with given prefix and suffix as input
+df = as.data.frame(clust_example$clusterings); colnames(df) = paste0('K_', 1:4)
+df$other = 1:nrow(clust_example$clusterings)  # add an additional column
+out = mrtree(df, prefix = 'K_', suffix=NULL)
+
+cl = cbind(clust_example$clusterings, clust_example$clusterings)
+# add some additional noise
+for (i in 1:ncol(cl)){
+    cl[sample(10),i] = sample(1:length(unique(cl[,i])), 10, replace = TRUE)
+}
+mrtree(cl, consensus=TRUE) # mrtree with within-resolution consensus clustering
+mrtree(cl, augment.path=TRUE) # mrtree with augmentation of NA cluster
+mrtree(cl, sample.weighted=TRUE) # weight the sample by inverse of cluster size
+
+# More example with Seurat and SingelCellExperiment object as input, see vignettes.
+}

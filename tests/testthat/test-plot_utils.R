@@ -1,30 +1,7 @@
-
-# setup
-set.seed(1)
-#             ()
-#       ()          ()
-#       ()        ()  ()
-#     ()  ()      ()  ()
-
-# generat the hierarchical clustering structure
-clusterings = matrix(NA, nrow=200, ncol=4)
-clusterings[1:200, 1] = 1
-clusterings[1:100, 2] = 1
-clusterings[101:200, 2] = 2
-clusterings[1:100, 3] = 1
-clusterings[101:150, 3] = 2
-clusterings[151:200, 3] = 3
-clusterings[1:50, 4] = 1
-clusterings[51:100, 4] = 2
-clusterings[101:150, 4] = 3
-clusterings[151:200, 4] = 4
-
-# adding some random noise
-clusterings[sample(10),2] = sample(1:2, 10, replace = TRUE)
-clusterings[sample(10),3] = sample(1:3, 10, replace = TRUE)
-clusterings[sample(10),4] = sample(1:4, 10, replace = TRUE)
-
+data("clust_example")
+clusterings = clust_example$clusterings
 ref.labels = rep(c('A','B','C','D'), each=50)
+
 out = mrtree(clusterings)
 
 test_that("Plot the mrtree constructed tree", {

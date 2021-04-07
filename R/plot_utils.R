@@ -24,6 +24,10 @@
 #' @importFrom ggtree ggtree nodepie layout_dendrogram
 #' @import ggimage
 #' @export
+#' @examples
+#' data("clust_example")
+#' out = mrtree(clust_example$clusterings)
+#' plot_tree(labelmat = out$labelmat.mrtree, ref.labels = clust_example$ref.labels, plot.piechart = TRUE)
 plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = TRUE, label.order = NULL,
     node.size = 0.2, cols = NULL, plot.piechart = TRUE, tip.labels = NULL, tip.label.dist = 4,
     show.branch.labels = FALSE, flip.branch = NULL, legend.title = "", bottom.margin = 25) {
@@ -191,6 +195,8 @@ plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = TRUE, label
 #'
 #' @importFrom clustree clustree
 #' @export
+#' @examples
+#' plot_clustree(labelmat = clust_example$clusterings, ref.labels = clust_example$ref.labels)
 plot_clustree <- function(labelmat, prefix = NULL, ref.labels = NULL, plot.ref = TRUE,
     ...) {
     require("ggraph")  # needed for guide_edge_colourbar to work (bug)

@@ -10,3 +10,12 @@
 #'   \item{tsne_UMI_counts}{tSNE plot of observed counts}
 #' }
 "data_example"
+
+
+#' A array of simulated multi-resolution clustering, with columns giving the labels for each clustering.
+#' @format A list of
+#' \describe{
+#'   \item{clusterings}{A matrix of sample by clusters, labels for each clusterings}
+#'   \item{ref.labels}{A vector of reference labels of the samples.}
+#' }
+"clust_example"
