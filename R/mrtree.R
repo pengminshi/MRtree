@@ -137,7 +137,7 @@ mrtree.matrix <- function(x, prefix = NULL, suffix = NULL, max.k = Inf, consensu
         # progress bar
         utils::setTxtProgressBar(pb, -length(bad.node))
 
-        # top down-collection, lowest three layers
+        # top down-collection, lowest two layers
         layer = as.numeric(sapply(candidate$start, function(x) strsplit(x, split = ";")[[1]][1]))
         layer.unique.sorted = sort(unique(layer), decreasing = F)
         lowest.layer = layer.unique.sorted[1:min(2, length(layer.unique.sorted))]  # among three lowest layers

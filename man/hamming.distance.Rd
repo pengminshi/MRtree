@@ -4,7 +4,7 @@
 \alias{hamming.distance}
 \title{Hamming Distances of Vectors}
 \usage{
-hamming.distance(x, y)
+hamming.distance(x, y = NULL)
 }
 \arguments{
 \item{x}{a vector or matrix.}

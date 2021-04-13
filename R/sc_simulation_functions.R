@@ -95,6 +95,7 @@ generateDataSymSim <- function(ncells, ngenes, tree, params = NULL, seed = 42, p
         if (!requireNamespace("SymSim", quietly = TRUE)) {
             stop("Need to install 'SymSim R package!'")
         }
+        require(SymSim)
     }
 
     args = list(...)

@@ -1,0 +1,94 @@
+---
+title: "Zeisel Example"
+author: "Minshi Peng"
+package: mrtree
+output:
+    BiocStyle::html_document:
+    number_sections: no
+    toc_depth: 2
+    toc_float: true
+vignette: >
+    %\VignetteIndexEntry{MRtree Tutorial}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}  
+bibliography: bibliography.bib
+
+---
+
+```{css, echo=FALSE}
+pre code {
+white-space: pre !important;
+overflow-x: scroll !important;
+word-break: keep-all !important;
+word-wrap: initial !important;
+}
+```
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                      echo=TRUE, message=FALSE, warnings=FALSE
+                      )
+```
+
+In this tutorial we show the use of the MRtree with SOUP clustering on a Mouse brain data (@RN135, GEO:GSE60361). Semi-soft clustering provided in [SOUP](https://github.com/lingxuez/SOUPR) package (@RN195). Make sure to install the `SOUP` package following the instructions on \url{https://github.com/lingxuez/SOUPR} (R >= 3.4.2).
+
+Load the package
+```{r, eval=T}
+library(mrtree)
+```
+
+The data is provided in the SOUP package, so we use this for convenience.
+```{r, eval=T}
+zeisel = SOUP::zeisel
+counts = t(zeisel$counts)
+true.labels = as.character(zeisel$cell.info$cell.type)
+true.labels=plyr::mapvalues(true.labels,
+                            from=c('pyramidal CA1','pyramidal SS'),
+                            to = c('excitatoryCA1','excitatorySS')) # no space in labels
+counts = counts[rownames(counts) %in% zeisel$select.genes,] # use the selected genes
+dim(counts)
+```
+
+Perform SOUP clustering with the targeted number of clusters as input for resolution parameters `Ks=2:12`.
+```{r, eval=T}
+set.seed(123)
+Ks = 2:12
+counts = counts[rownames(counts) %in% zeisel$select.genes,]
+# takes a few minutes
+clust.out = sc_clustering.soup(exprs=counts, Ks=Ks, type='count', estimate.k=F,
+                              pure.prop=0.8, ext.prop=NULL, scale.factor=1e6)
+```
+
+Perform MRtree. Show the resulted tree plot
+```{r, eval=T,  warning=F, message=F, results = FALSE, fig.width=7, fig.height=4}
+out = mrtree(clust.out$labelmat, prefix='soup_K')
+
+hc = plot_tree(labelmat = out$labelmat.mrtree,  ref.labels = true.labels,
+               plot.piechart = F, node.size = 0.3, tip.label.dist = 8,  bottom.margin = 48,
+               legend.title=' ')
+hc
+```
+
+Stability analysis, where the optimal cut is suggested at 7 final clusters.
+```{r, eval=T, fig.width=5, fig.height=3}
+# stability analysis
+stab.out = stability_plot(out); stab.out$plot
+```
+
+Compare the initial SOUP clustering results and MRtree results
+
+```{r, eval=T}
+# accuracy of cluster
+ks.flat = apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))
+ks.mrtree = apply(out$labelmat.mrtree, 2, FUN=function(x) length(unique(x)))
+amri.flat = sapply(1:ncol(out$labelmat.flat), function(i) AMRI(out$labelmat.flat[,i], true.labels)$amri)
+amri.flat = aggregate(amri.flat, by=list(k=ks.flat), FUN=mean)
+amri.recon = sapply(1:ncol(out$labelmat.mrtree), function(i) AMRI(out$labelmat.mrtree[,i], true.labels)$amri)
+
+df = rbind(data.frame(k=amri.flat$k, amri=amri.flat$x, method='SOUP flat'),
+           data.frame(k=ks.mrtree, amri=amri.recon, method='MRtree'))
+ggplot2::ggplot(data=df, aes(x=k, y=amri, color=method)) + geom_point()+geom_line() + theme_bw() + ylab('AMRI')
+```
+
+# Reference
+

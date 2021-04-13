@@ -33,7 +33,7 @@ AMRI <- function(labels1, labels2) {
         diff.size = get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1)
     } else {
         # k1=k2
-        diff.size = (get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2) + 
+        diff.size = (get_set_D_size(labels.low.resolution = labels1, labels.high.resolution = labels2) +
             get_set_D_size(labels.low.resolution = labels2, labels.high.resolution = labels1))/2
     }
     mri = 1 - diff.size/n/(n - 1) * 2
@@ -70,7 +70,7 @@ get_set_D_size <- function(labels.low.resolution, labels.high.resolution) {
             ind2 = which(labels.low.resolution == class.low[k2])
             ind = c(ind1, ind2)
 
-            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by = list(labels.low.resolution[ind]), 
+            agg.out = aggregate(as.factor(labels.high.resolution[ind]), by = list(labels.low.resolution[ind]),
                 FUN = table)
             if (length(agg.out$Group.1) > 1) {
                 size = size + sum(apply(matrix(c(agg.out[, -1]), nrow = 2), 2, prod))
@@ -96,19 +96,19 @@ expected_MRI_perm <- function(labels1, labels2) {
     k1 = length(unique(labels1))
     k2 = length(unique(labels2))
 
-    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x * 
+    prob.pairs.in.same.cluster1 = sum(sapply(count.per.cluster1, function(x) x *
         (x - 1)/2))/n/(n - 1) * 2
-    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x * 
+    prob.pairs.in.same.cluster2 = sum(sapply(count.per.cluster2, function(x) x *
         (x - 1)/2))/n/(n - 1) * 2
 
-    
+
     if (k1 < k2) {
         diff.prob = (1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2
     } else if (k1 > k2) {
         diff.prob = prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2)
     } else {
         # k1==k2
-        diff.prob = ((1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2 + 
+        diff.prob = ((1 - prob.pairs.in.same.cluster1) * prob.pairs.in.same.cluster2 +
             prob.pairs.in.same.cluster1 * (1 - prob.pairs.in.same.cluster2))/2
     }
 
@@ -135,12 +135,12 @@ stability_plot <- function(out, index.name = "ari") {
     if (!index.name %in% c("ari", "amri")) {
         stop("Index can only be 'ari' or 'amri'")
     }
-    diff = get_index_per_layer(labelmat1 = out$labelmat.flat, labelmat2 = out$labelmat.recon, 
+    diff = get_index_per_layer(labelmat1 = out$labelmat.flat, labelmat2 = out$labelmat.recon,
         index.name = index.name)
-    df = aggregate(diff, by = list(k = apply(out$labelmat.flat, 2, FUN = function(x) length(unique(x)))), 
+    df = aggregate(diff, by = list(k = apply(out$labelmat.flat, 2, FUN = function(x) length(unique(x)))),
         FUN = mean)
 
-    p = ggplot2::ggplot(data = df, aes(x = k, y = x)) + geom_line() + theme_bw() + 
+    p = ggplot2::ggplot(data = df, aes(x = k, y = x)) + geom_line() + theme_bw() +
         labs(x = "resolutions (K)", y = paste0(toupper(index.name), " between flat clusterings and MRtree"))
     colnames(df) = c("resolution", index.name)
 
@@ -226,12 +226,12 @@ adjustedRandIndex <- function(x, y) {
     x <- as.vector(x)
     y <- as.vector(y)
 
-    if (length(x) != length(y)) 
+    if (length(x) != length(y))
         stop("arguments must be vectors of the same length")
 
     tab <- table(x, y)
 
-    if (all(dim(tab) == c(1, 1))) 
+    if (all(dim(tab) == c(1, 1)))
         return(1)
 
     a <- sum(choose(tab, 2))
@@ -239,7 +239,7 @@ adjustedRandIndex <- function(x, y) {
     c <- sum(choose(colSums(tab), 2)) - a
     d <- choose(sum(tab), 2) - a - b - c
 
-    ARI <- (a - (a + b) * (a + c)/(a + b + c + d))/((a + b + a + c)/2 - (a + b) * 
+    ARI <- (a - (a + b) * (a + c)/(a + b + c + d))/((a + b + a + c)/2 - (a + b) *
         (a + c)/(a + b + c + d))
 
     return(ARI)
@@ -254,7 +254,7 @@ adjustedRandIndex <- function(x, y) {
 #' @param y an optional vector.
 #'
 #' @return distance matrix
-hamming.distance <- function(x, y) {
+hamming.distance <- function(x, y=NULL) {
 
     z <- NULL
 
@@ -302,8 +302,21 @@ get_similarity_from_tree <- function(tree, labels) {
 #' Get sample pairwise similarity matrix from the label matrix
 #'
 #' @param labelmat a n-by-m labelmatrix, n samples, and m clusterings one per column
+#' @param kmax maximum number of clusters
+#'
 #' @return a n-by-n similarity matrix
-get_similarity_from_labelmat <- function(labelmat) {
+#' @export
+get_similarity_from_labelmat <- function(labelmat, kmax=NULL) {
+
+    if (!is.null(kmax)){
+        ks = apply(labelmat, 2, function(x) length(unique(x)))
+        cols = which(ks <= kmax)
+        if (length(cols)==0){
+            warning('No clusterings')
+            return (matrix(0, nrow=nrow(labelmat), ncol=nrow(labelmat)))
+        }
+        labelmat = labelmat[,cols, drop=FALSE]
+    }
 
     d = hamming.distance(labelmat)
     sim.mat = 1 - d/max(d)
@@ -364,6 +377,7 @@ label_onehot <- function(labels, K = NULL) {
 #'
 #' @param tree phylo object or hclust object
 #' @param ... other parameters
+#' @export
 tree_to_labelmat <- function(tree, ...) {
     UseMethod("tree_to_labelmat", tree)
 }
@@ -378,6 +392,7 @@ tree_to_labelmat <- function(tree, ...) {
 #'
 #' @importFrom ape Ntip
 #' @importFrom dendextend cutree
+#' @export
 tree_to_labelmat.phylo <- function(tree, Ks = NULL) {
 
     if (is.null(Ks)) {
@@ -403,6 +418,7 @@ tree_to_labelmat.phylo <- function(tree, Ks = NULL) {
 #'
 #' @return a label matrix
 #' @importFrom dendextend cutree
+#' @export
 tree_to_labelmat.hclust <- function(tree, Ks = NULL) {
 
     if (is.null(Ks)) {

@@ -4,10 +4,12 @@
 \alias{get_similarity_from_labelmat}
 \title{Get sample pairwise similarity matrix from the label matrix}
 \usage{
-get_similarity_from_labelmat(labelmat)
+get_similarity_from_labelmat(labelmat, kmax = NULL)
 }
 \arguments{
 \item{labelmat}{a n-by-m labelmatrix, n samples, and m clusterings one per column}
+
+\item{kmax}{maximum number of clusters}
 }
 \value{
 a n-by-n similarity matrix
