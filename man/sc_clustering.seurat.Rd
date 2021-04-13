@@ -2,7 +2,7 @@
 % Please edit documentation in R/sc_clustering_methods.R
 \name{sc_clustering.seurat}
 \alias{sc_clustering.seurat}
-\title{Perform Single Cell data clustering using Seurat V2}
+\title{Perform Single Cell data clustering using Seurat}
 \usage{
 sc_clustering.seurat(
   counts,
@@ -23,13 +23,13 @@ sc_clustering.seurat(
 \arguments{
 \item{counts}{n.genes-by-n.cells count matrix}
 
-\item{resolutions}{vector of clustering resolutions (input for FindClusters)}
+\item{resolutions}{vector of clustering resolution paramers (input for FindClusters)}
 
 \item{metadata}{a data frame containing all the cell informations (equivalent to colData)}
 
-\item{min.cells}{integer, include features detected in at least this many cells}
+\item{min.cells}{integer, include features detected in at least this number cells}
 
-\item{min.features}{integer, include cells where at least this many features are detected}
+\item{min.features}{integer, include cells where at least this number features are detected}
 
 \item{scale.factor}{scalar, sets the scale factor for cell-level normalization}
 
@@ -39,7 +39,7 @@ sc_clustering.seurat(
 if >1: find variable features using 'vst' to get find.variable.features genes. F: not
 genes selection is performed}
 
-\item{npcs}{integer, number of principal component to calculate and used for build
+\item{npcs}{integer, number of principal component to calculate. The PCS are used for build
 neighbor graph}
 
 \item{seurat.graph.algorithm}{algorithm for modularity optimization (1 = original
@@ -49,13 +49,13 @@ Louvain algorithm; 2 = Louvain algorithm with multilevel refinement; 3 = SLM alg
 \item{build.hierarchical.tree}{boolean, whether to build hierarchical tree using HAC
 from Seurat clusters with \code{max(resolution)}.}
 
-\item{return.seurat.object}{boolean, whether to return Seurat object. Save memory by setting it to False.}
+\item{return.seurat.object}{boolean, whether to return Seurat object. Save memory by setting it to \code{FALSE}.}
 
 \item{verbose}{boolean, whether to print messages}
 }
 \value{
 a list containing \describe{
-    \item{seurat.clusters}{a data frame containing all clustering as columns with
+    \item{seurat.clusters}{a data frame containing all clusteringS as columns with
     prefix 'RNA_snn_res.'}
     \item{obj}{Seurat object before clustering is performed}
     \item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering
@@ -63,5 +63,5 @@ a list containing \describe{
 }
 }
 \description{
-Perform Single Cell data clustering using Seurat V2
+Perform Single Cell data clustering using Seurat
 }

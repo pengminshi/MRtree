@@ -30,7 +30,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
                       )
 ```
 
-In this tutorial we show the use of the MRtree with SOUP clustering on a Mouse brain data (@RN135, GEO:GSE60361). Semi-soft clustering provided in [SOUP](https://github.com/lingxuez/SOUPR) package (@RN195). Make sure to install the `SOUP` package following the instructions on \url{https://github.com/lingxuez/SOUPR} (R >= 3.4.2).
+In this tutorial, we show the use of the MRtree with SOUP clustering on a Mouse brain data (@RN135, GEO:GSE60361). SOUP is a Semi-soft clustering method provided by [SOUP](https://github.com/lingxuez/SOUPR) package (@RN195). Make sure to install the `SOUP` package following the instructions on \url{https://github.com/lingxuez/SOUPR} (R >= 3.4.2).
 
 Load the package
 ```{r, eval=T}
@@ -69,13 +69,13 @@ hc = plot_tree(labelmat = out$labelmat.mrtree,  ref.labels = true.labels,
 hc
 ```
 
-Stability analysis, where the optimal cut is suggested at 7 final clusters.
+Stability analysis shows the optimal cut is obtained at K=7.
 ```{r, eval=T, fig.width=5, fig.height=3}
 # stability analysis
 stab.out = stability_plot(out); stab.out$plot
 ```
 
-Compare the initial SOUP clustering results and MRtree results
+Compare the initial SOUP clustering results with MRtree results.
 
 ```{r, eval=T}
 # accuracy of cluster

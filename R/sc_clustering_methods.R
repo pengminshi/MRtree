@@ -1,27 +1,27 @@
-#' Perform Single Cell data clustering using Seurat V2
+#' Perform Single Cell data clustering using Seurat
 #'
 #' @param counts n.genes-by-n.cells count matrix
-#' @param resolutions vector of clustering resolutions (input for FindClusters)
+#' @param resolutions vector of clustering resolution paramers (input for FindClusters)
 #' @param metadata a data frame containing all the cell informations (equivalent to colData)
-#' @param min.cells integer, include features detected in at least this many cells
-#' @param min.features integer, include cells where at least this many features are detected
+#' @param min.cells integer, include features detected in at least this number cells
+#' @param min.features integer, include cells where at least this number features are detected
 #' @param scale.factor scalar, sets the scale factor for cell-level normalization
 #' @param vars.to.regress a vector of strings, variables to regress out
 #' @param find.variable.features T: find highly variable features using 'mean.var.plot',
 #' if >1: find variable features using 'vst' to get find.variable.features genes. F: not
 #' genes selection is performed
-#' @param npcs integer, number of principal component to calculate and used for build
+#' @param npcs integer, number of principal component to calculate. The PCS are used for build
 #' neighbor graph
 #' @param seurat.graph.algorithm algorithm for modularity optimization (1 = original
 #' Louvain algorithm; 2 = Louvain algorithm with multilevel refinement; 3 = SLM algorithm;
 #' 4 = Leiden algorithm). Leiden requires the leidenalg python.
 #' @param build.hierarchical.tree boolean, whether to build hierarchical tree using HAC
 #' from Seurat clusters with \code{max(resolution)}.
-#' @param return.seurat.object boolean, whether to return Seurat object. Save memory by setting it to False.
+#' @param return.seurat.object boolean, whether to return Seurat object. Save memory by setting it to \code{FALSE}.
 #' @param verbose boolean, whether to print messages
 #'
 #' @return a list containing \describe{
-#'     \item{seurat.clusters}{a data frame containing all clustering as columns with
+#'     \item{seurat.clusters}{a data frame containing all clusteringS as columns with
 #'     prefix 'RNA_snn_res.'}
 #'     \item{obj}{Seurat object before clustering is performed}
 #'     \item{hc.tree}{hclust object resulted from hierarchical agglomerative clustering

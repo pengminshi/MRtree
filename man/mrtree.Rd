@@ -59,7 +59,7 @@ A list containing  \describe{
 }
 }
 \description{
-The method take as input the flat clusterings obtained across multiple resolution parameters. It reconcil the clusterings to produce a hierarchical cluster tree structure.
+The method take as input the flat clusterings obtained across multiple resolution parameters. It reconciles the clusterings to produce a hierarchical cluster tree structure.
 
 \code{mrtree} with label saved in a matrix as input
 

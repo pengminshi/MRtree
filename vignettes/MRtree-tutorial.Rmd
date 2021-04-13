@@ -32,31 +32,31 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
 
 # Introduction
 
-A wealth of clustering algorithms are available for Single-cell RNA sequencing (scRNA-seq), but it remains challenging to compare and characterize the features across different scales of resolution. To resolve this challenge Multi-resolution Reconciled Tree (MRtree), builds a hierarchical tree structure based on multi-resolution partitions that is highly flexible and can be coupled with most scRNA-seq clustering algorithms. In this tutorial we will show the usage of the MRtree R package and how to couple with different clustering methods.
+A wealth of clustering algorithms are available for Single-cell RNA sequencing (scRNA-seq), but it remains challenging to compare and characterize the features across different scales of resolution. To resolve this challenge Multi-resolution Reconciled Tree (MRtree), builds a hierarchical tree structure based on multi-resolution partitions that are highly flexible and can work with most scRNA-seq clustering algorithms. This tutorial will show the usage of the MRtree R package and how to couple it with different clustering methods.
 
 # Usage 
 
 The main function to perform MRtree analysis is ``mrtree()``, where the data input is one of the following:
 
-* An n-by-m matrix of labels, where n rows correspond to the n samples (cells), m columns corresponding to m clusterings, one per resolution.
-* A dataframe, with the columns giving the clustering results with different resolutions specified by prefix, `prefix`， and suffix, `suffix`,. For example, by specifying `prefix=’K_‘`, columns in dataframe starting with `K_` will be considered.
-* Seurat object with multiresolution clustering results. The clusterings are by default given stored in the object with column prefix `RNA_snn_res.` as the output of Seurat Louvain clustering. Need to modify the prefix if using a different assay and differnet neighbor graph or method.
-* SingleCellExperiment (SC3) object with multiresolution clustering results. By default the clusterings are in the columns with prefix `sc3_` and suffix `_clusters` as ouput from SC3 clustering.
+* An n-by-m matrix of labels, where n rows correspond to the n samples (cells), m columns correspond to m clusterings, one per resolution.
+* A data frame, with the columns giving the clustering results with different resolutions specified by prefix, `prefix`， and suffix, `suffix`,. For example, by specifying `prefix=’K_‘`, columns in the data frame starting with `K_` will be considered.
+* Seurat object with multiresolution clustering results. The clusterings are by default given stored in the object with column prefix `RNA_snn_res.` as the output of Seurat Louvain clustering. Need to modify the prefix if using a different assay and different neighbor graph or method.
+* SingleCellExperiment (SC3) object with multiresolution clustering results. By default, the clusterings are in the columns with the prefix `sc3_` and suffix `_clusters` as output from SC3 clustering.
 
-`sc_clustering_methods.R` file provide a few clustering warppers (note that some of the dependent packages are not imported in package installation, to avoid redundant dependencies, so make sure the respective clustering package is installed prior to the analysis, see instructions below), including:
+`sc_clustering_methods.R` file provide a few clustering wrappers (note that some of the dependent packages are not imported in package installation, to avoid redundant dependencies, so make sure the respective clustering package is installed before the analysis, see instructions below), including:
 
 * `sc_clustering.seurat`, graph clustering provided by [Seurat](https://satijalab.org/seurat/) package (@RN226). Make sure to install `Seurat` and its dependent R packages (R >= 4.0.0).
 * `sc_clustering.sc3`, Consensus clustering provided by [SC3](https://github.com/hemberg-lab/SC3) package (@RN33). Make sure to install `SC3` and `SingleCellExperiment` R packages from Bioconductor (R >= 3.3)
 * `sc_clustering.soup`, Semi-soft clustering provided in [SOUP](https://github.com/lingxuez/SOUPR) package (@RN195). Make sure to install the `SOUP` package following the instructions on \url{https://github.com/lingxuez/SOUPR} (R >= 3.4.2). 
-* `sc_clustering.umap_kmeans`, UMAP dimension reduction followed by K-means clustering in the low dimensional space. Make sure to install `uwot` package for performing UMAP and `ADPclust` for selecting number of clusters for comparison (R ≥ 3.0.0).
+* `sc_clustering.umap_kmeans`, UMAP dimension reduction followed by K-means clustering in the low dimensional space. Make sure to install `uwot` package for performing UMAP and `ADPclust` for selecting the number of clusters for comparison (R ≥ 3.0.0).
 * `sc_clustering.simlr`, Single-cell Interpretation via Multi-kernel LeaRning (SIMLR) (@wang2018simlr). Make sure to install `SIMLR` package from Bioconductor (R >= 4.0.0)
 
-To use other clustering methods, First generate the clusterings at multiple resolutions. Save the results into a label matrix, where rows are samples and columns are clusterings.
+To use other clustering methods, we first generate the clusterings at multiple resolutions. Save the results into a label matrix, where rows are samples and columns are clusterings.
 
 The output of the main function `mrtree` contains:
 
-* `labelmat.mrtree` The reconciled tree represented using the label matrix, where the first and last column corresponds to the top and bottom layer in the tree. The repeated columns in are removed to leave the unique columns.
-* `labelmat.recon` The reconciled tree stored in a label matrix, where the columns match with the columns from the raw input label matrix. This allows calculating the stability measure.
+* `labelmat.mrtree` The reconciled tree represented using the label matrix, where the first and last column corresponds to the top and bottom layer in the tree. The repeated columns are removed to leave the unique layers of the tree.
+* `labelmat.recon` The reconciled tree is stored in a label matrix, where the columns match with the columns from the raw input label matrix. This enables matching columns between initial raw clustering and final clusters in MRtree-constructed tree to calculate the stability metric.
 * `labelmat.flat` The initial flat clustering label matrix as input.
 * `labelmat.ccs` The results from with-resolution concensus clustering if performed ('concensus=TRUE').
 * `resolutions` Resolution parameters if provided by the input object.
@@ -65,7 +65,7 @@ The output of the main function `mrtree` contains:
 
 # Example with simulated data
 
-In this tutorial we illustrate the usage of MRtree functions using a simulated dataset. The data is simulated from [SymSim](https://github.com/YosefLab/SymSim) by supplying a tree structure as shown below, containing UMI counts of 500 cells on 500 genes. Make sure to implement SymSim as well as the dependent packages listed on \url{https://github.com/YosefLab/SymSim} if you want generate the data by yourself, otherwise you can use the saved data example `data_example`.
+In this tutorial, we illustrate the usage of MRtree functions using a simulated dataset. The data is simulated from [SymSim](https://github.com/YosefLab/SymSim) by supplying a tree structure as shown below, containing UMI counts of 500 cells on 500 genes. If you want generate the simulated data using the simulation functions, make sure to install SymSim and the dependent packages listed on \url{https://github.com/YosefLab/SymSim}. Otherwise you can use the saved data example `data_example`.
 ![Tree structure used for simulating single cell data using SymSim packages](fig/simulation_example_8type_tree_structure.png)
 
 ```{r, eval=T}
@@ -103,7 +103,7 @@ dat$tsne_UMI_counts
 
 ## MRtree with Seurat clustering 
 
-As the first step, multi-resolution flat clustering is conducted using Seurat with a range of resolution parameters. We recommend choosing the maximum resolution (`gamma.max`) between $2$ and $3$.  The initial multiresolution clustering results can be visualized using a cluster tree, where each layer corresponds to one clustering, the tree nodes represent clusters, and edges between clusters in adjacent layers indicate there are shared data points between two clusters.
+As the first step, we conduct multi-resolution flat clustering using Seurat with a range of resolution parameters. We recommend choosing the maximum resolution (`gamma.max`) between $2$ and $3$.  The initial multi-resolution clustering results can be visualized using a cluster tree, where each layer corresponds to one clustering, the tree nodes represent clusters, and edges between clusters in adjacent layers indicate shared data points between two clusters.
 
 ```{r, fig.width=7, fig.height=4}
 set.seed(42)
@@ -132,7 +132,7 @@ plot_clustree(labelmat=seurat.out$seurat.clusters, prefix ='RNA_snn_res.',
               ref.labels = ref.labels, plot.ref = FALSE)
 ```
 
-Then we apply MRtree to ubtain the hierarchical cluster tree. The resulted tree structure can be visualized using a dendrogram, with a pie chart on each tree node detailing the cluster composition given the known true labels.
+Then we apply MRtree to obtain the hierarchical cluster tree. The resulted tree structure can be visualized using a dendrogram, with a pie chart on each tree node detailing the cluster composition given the known true labels.
 
 ```{r, warning=F, message=F, results = FALSE, fig.width=7, fig.height=4}
 out = mrtree(seurat.out$obj, n.cores = 2, consensus=FALSE, augment.path=FALSE)
@@ -143,7 +143,7 @@ plot_tree(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, plot.piechart = T
           node.size = 0.4, tip.label.dist = 10, bottom.margin=30 )
 ```
 
-We evaluate te per-resolution clustering performance with a novel metric, Adjusted Multiresolution Rand Index (AMRI), which is adapted from Adjusted Rand Index (ARI) to address the problem of ARI biasing for higher resolution.
+We evaluate the per-resolution clustering performance with a novel metric, Adjusted Multiresolution Rand Index (AMRI). The metric is adapted from Adjusted Rand Index (ARI) to address the problem of ARI biasing for higher resolution.
 
 ```{r, fig.width=5, fig.height=3}
 ks.flat = apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))
@@ -156,7 +156,7 @@ df = rbind(data.frame(k=amri.flat$k, amri=amri.flat$x, method='Seurat flat'),
            data.frame(k=ks.mrtree, amri=amri.recon, method='MRtree'))
 ggplot2::ggplot(data=df, aes(x=k, y=amri, color=method)) + geom_line() + theme_bw()
 ```
-We calcuate the similarity between the initial flat clustering and MRtree clusters across resolution on x-axis. Lower similarity indicates the selected clustering algorithm is not able to generate stabel clusters at the given resolution. In this example the changing point is observed at $k=7$, while the stability drops steeply when $k>8$.
+We calculate the similarity between the initial flat clustering and MRtree clusters across resolution on the x-axis. Lower similarity indicates the selected clustering algorithm is not able to generate stable clusters at the given resolution. In this example, the changing point is observed at $k=7$, while the stability drops steeply when $k>8$.
 
 ```{r, fig.width=5, fig.height=3}
 stab.out = stability_plot(out)
@@ -165,7 +165,7 @@ stab.out$plot
 
 ## MRtree with SC3 clustering 
 
-Next we apply MRtree together with SC3, which is itself a concensus method, despite that a user-provided resolution parameter is still required.
+Next, we apply MRtree together with SC3, which is itself a consensus method, despite that a user-provided resolution parameter is still required.
 
 ```{r, eval=T, show = "hide", message=F}
 ks = 2:10
@@ -194,7 +194,7 @@ plot_tree(labelmat=out$labelmat.mrtree, ref.labels=ref.labels, plot.piechart = T
 ```
 
 
-We evaluate te per-resolution clustering performance via AMRI:
+We evaluate the per-resolution clustering performance via AMRI:
 
 ```{r, eval=T, fig.width=5, fig.height=3}
 ks.flat = apply(out$labelmat.flat, 2, FUN=function(x) length(unique(x)))
@@ -208,7 +208,7 @@ df = rbind(data.frame(k=amri.flat$k, amri=amri.flat$x, method='SC3 flat'),
 ggplot2::ggplot(data=df, aes(x=k, y=amri, color=method)) + geom_line() + theme_bw()
 ```
 
-We calcuate the similarity between the initial flat clustering and MRtree clusters across scales. 
+We calculate the similarity between the initial flat clustering and MRtree clusters across scales. 
 
 ```{r, eval=T, fig.width=5, fig.height=3}
 stab.out = stability_plot(out)

@@ -1,10 +1,10 @@
 #' Muti-resolution reconciled tree (MRtree)
 #'
-#' The method take as input the flat clusterings obtained across multiple resolution parameters. It reconcil the clusterings to produce a hierarchical cluster tree structure.
+#' The method take as input the flat clusterings obtained across multiple resolution parameters. It reconciles the clusterings to produce a hierarchical cluster tree structure.
 #'
 #' @param x Object containing multi-resolution clustering results
 #' **data source**
-#' Building a reconciled hierarchical clustering tree requires information about which cluster each sample has been assinged to at different resolutions. This information can be supplied in various forms, as a matrix with rows for samples and columns for partitions, data.frame or more specialised object. In cases for data frame and objects it must contain numeric columns with the naming structure `PXS` where `P` is a prefix indicating that the column contains clustering information, `X` is a numeric value indicating the clustering resolution and `S` is any additional suffix in indicate the target columns used as input clustering labels. For `SingleCellExperiment` objects this information must be in the `colData` slot and for `Seurat` objects it must be in the `meta.data` slot.
+#' Building a reconciled hierarchical clustering tree requires information about which cluster each sample has been assigned to at different resolutions. This information can be supplied in various forms, as a matrix with rows for samples and columns for partitions, data.frame or more specialized object. In cases for data frame and objects, it must contain numeric columns with the naming structure `PXS` where `P` is a prefix indicating that the column contains clustering information, `X` is a numeric value indicating the clustering resolution and `S` is any additional suffix indicating the target columns used as input clustering labels. For `SingleCellExperiment` objects this information must be in the `colData` slot, and for `Seurat` objects it must be in the `meta.data` slot.
 #' @param ... Other parameters
 #'
 #' @return A list containing  \describe{
