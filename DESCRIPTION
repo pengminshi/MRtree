@@ -33,11 +33,12 @@ Imports:
     yaml,
     Seurat,
     SingleCellExperiment,
-    SymSim,
     uwot,
     grDevices
 Depends:
     R (>= 3.6.0)
+Suggests:
+    SymSim
 Remotes:
     YosefLab/SymSim
 RoxygenNote: 7.1.1
