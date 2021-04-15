@@ -13,8 +13,7 @@ LazyData: true
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0),
-    SymSim
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Imports:
     parallel,
@@ -35,7 +34,8 @@ Imports:
     Seurat,
     SingleCellExperiment,
     uwot,
-    grDevices
+    grDevices,
+    SymSim
 Depends:
     R (>= 3.6.0)
 Remotes:
