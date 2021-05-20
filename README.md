@@ -20,7 +20,7 @@ MRtree for Multi-resolution Reconciled tree, is a post clustering procedure to b
 
 ## Installation
 First, make sure to install all the dependent packages indicated in the `DESCRIPTION` file.
-`mrtree` package can be installed through `devtools` in R with the following commands.
+`mrtree` package can then be installed through `devtools` in R with the following commands,
 ```{r}
 library("devtools")
 devtools::install_github("pengminshi/mrtree")

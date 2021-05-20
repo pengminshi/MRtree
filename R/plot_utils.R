@@ -11,8 +11,9 @@
 #' @param cols a vector of colors, one per each label. If not provided, use the default colors.
 #' @param plot.piechart boolean, whether to draw the pie chart for each tree node.
 #' @param tip.labels a vector of strings specifying the labels of tree leafs. The labels should align with the order of leaf in the plot.
-#' @param tip.label.dist distance of the tip labels to the tree tips
+#' @param tip.label.dist vertical distance of the tip labels to the tree tips
 #' @param show.branch.labels boolean, whether to show the branch labels for convenience of flipping branches
+#' @param branch.label.dist vertical distance from branch node labels to the node
 #' @param flip.branch a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.
 #' @param legend.title string as legend title. Empty string by default.
 #' @param bottom.margin size of the bottom margin, need to be adjusted to show the full labels.
@@ -28,161 +29,151 @@
 #' data("clust_example")
 #' out = mrtree(clust_example$clusterings)
 #' plot_tree(labelmat = out$labelmat.mrtree, ref.labels = clust_example$ref.labels, plot.piechart = TRUE)
-plot_tree <- function(labelmat, ref.labels = NULL, show.ref.labels = TRUE, label.order = NULL,
-    node.size = 0.2, cols = NULL, plot.piechart = TRUE, tip.labels = NULL, tip.label.dist = 4,
-    show.branch.labels = FALSE, flip.branch = NULL, legend.title = "", bottom.margin = 25) {
+plot_tree <- function (labelmat, ref.labels = NULL, show.ref.labels = TRUE,
+                       label.order = NULL, node.size = 0.2, cols = NULL, plot.piechart = TRUE,
+                       tip.labels = NULL, tip.label.dist = 4,
+                       show.branch.labels = FALSE, branch.label.dist = 10,
+                       flip.branch = NULL, legend.title = "", bottom.margin = 25)
+{
     if (is.null(colnames(labelmat))) {
         ks = apply(labelmat, 2, function(x) length(unique(x)))
         colnames(labelmat) = paste0("K", ks)
     }
-    if (length(unique(colnames(labelmat)))!=ncol(labelmat)) {
-        # repeated colnames
+    if (length(unique(colnames(labelmat))) != ncol(labelmat)) {
         colnames(labelmat) = paste0("layer", 1:ncol(labelmat))
         prefix = "layer"
     }
     if (is.null(ref.labels)) {
-        # creat the label using the clustering in last layer
-        ref.labels = paste0('C', labelmat[,ncol(labelmat)])
-    } else {
+        ref.labels = paste0("C", labelmat[, ncol(labelmat)])
+    }
+    else {
         ref.labels = as.character(ref.labels)
         ref.labels = gsub("-", "_", ref.labels)
-        if (any(is.na(ref.labels))){
-            ref.labels[is.na(ref.labels)] = 'NA'
+        if (any(is.na(ref.labels))) {
+            ref.labels[is.na(ref.labels)] = "NA"
         }
         check_numeric = suppressWarnings(as.numeric(ref.labels))
-        if (any(!is.na(check_numeric))){
-            ind = which(!is.na(check_numeric)) # entries with numeric label
-            ref.labels[ind] = paste0('C', ref.labels[ind])
+        if (any(!is.na(check_numeric))) {
+            ind = which(!is.na(check_numeric))
+            ref.labels[ind] = paste0("C", ref.labels[ind])
         }
     }
-
     if (is.null(label.order)) {
         label.order = sort(unique(ref.labels))
-    } else {
+    }
+    else {
         label.order = gsub("-", "_", label.order)
         if (!all(label.order %in% ref.labels)) {
             warnings(sum(!label.order %in% ref.labels), "label name not if the reference labels!")
         }
     }
-
     if (plot.piechart) {
         pointsize = 0.01
-    } else {
+    }
+    else {
         pointsize = 5
     }
-
     n = nrow(labelmat)
     p = ncol(labelmat)
-
-    # save in data.tree format
-    labelmat = matrix(paste(matrix(rep(colnames(labelmat), each = n), nrow = n),
-        labelmat, sep = "-"), nrow = n)
+    labelmat = matrix(paste(matrix(rep(colnames(labelmat), each = n),
+                                   nrow = n), labelmat, sep = "-"), nrow = n)
     df = as.data.frame(unique(labelmat), stringsAsFactors = F)
-    df$pathString = apply(df, 1, function(x) paste(c("all", x), collapse = "/"))
+    df$pathString = apply(df, 1, function(x) paste(c("all", x),
+                                                   collapse = "/"))
     tree.datatree = data.tree::as.Node(df)
-
-    # phylo tree for visualization
     tree.phylo = data.tree::as.phylo.Node(tree.datatree)
-
-    # reference type per node
-    if (any(duplicated(c(tree.phylo$tip.label,tree.phylo$node.label)))){
-        stop('Not an hierarchical tree structure')
+    if (any(duplicated(c(tree.phylo$tip.label, tree.phylo$node.label)))) {
+        stop("Not an hierarchical tree structure")
     }
     ord = data.frame(node = 1:(ape::Ntip(tree.phylo) + ape::Nnode(tree.phylo)),
                      row.names = c(tree.phylo$tip.label, tree.phylo$node.label))
-    df = data.frame(labelmat = c(labelmat), ref.labels = rep(ref.labels, p))
+    df = data.frame(labelmat = c(labelmat), ref.labels = rep(ref.labels,
+                                                             p))
     df = rbind(df, data.frame(labelmat = "all", ref.labels = ref.labels))
-
-    # calculate per type percentage
-    pct = aggregate(as.factor(df$ref.labels), by = list(node = df$labelmat), FUN = function(x) {
-        t = table(x)
-        t/sum(t)
-    })
+    pct = aggregate(as.factor(df$ref.labels), by = list(node = df$labelmat),
+                    FUN = function(x) {
+                        t = table(x)
+                        t/sum(t)
+                    })
     pct = data.frame(pct$x, row.names = pct$node, stringsAsFactors = F)
-    pct = transform(merge(pct, ord, by = "row.names", all = TRUE), row.names = Row.names,
-        Row.names = NULL)  # use transform to remove the rownames
-
-    # set the node size
-    nodesize = aggregate(df$labelmat, by = list(node = df$labelmat), FUN = function(x) length(x))
-    nodesize = data.frame(nodesize = nodesize$x/max(nodesize$x), node = ord[as.character(nodesize$node),
-        ], row.names = ord[as.character(nodesize$node), ])
-    nodesize$nodesize = nodesize$nodesize^(1/8) * node.size  # rescale to reduce the difference
-
-    # set the major label of the node and tips
-    major.labels = data.frame(major.labels = colnames(pct[, colnames(pct) != "node"])[apply(pct[,
-        1:(ncol(pct) - 1)], 1, which.max)], node = pct$node, row.names = pct$node)
-
-
-    # only plot the splits and leaf
+    pct = transform(merge(pct, ord, by = "row.names", all = TRUE),
+                    row.names = Row.names, Row.names = NULL)
+    nodesize = aggregate(df$labelmat, by = list(node = df$labelmat),
+                         FUN = function(x) length(x))
+    nodesize = data.frame(nodesize = nodesize$x/max(nodesize$x),
+                          node = ord[as.character(nodesize$node), ], row.names = ord[as.character(nodesize$node),
+                                                                                     ])
+    nodesize$nodesize = nodesize$nodesize^(1/8) * node.size
+    major.labels = data.frame(major.labels = colnames(pct[, colnames(pct) !=
+                                                              "node"])[apply(pct[, 1:(ncol(pct) - 1)], 1, which.max)],
+                              node = pct$node, row.names = pct$node)
     tab = table(tibble::as_tibble(tree.phylo)$parent)
     issplit = setdiff(names(tab[tab > 1]), ord["all", 1])
     isleaf = 1:ape::Ntip(tree.phylo)
     nodesize = nodesize[c(issplit, isleaf), ]
     major.labels = major.labels[c(issplit, isleaf), ]
-    major.labels$major.labels = factor(major.labels$major.labels, levels = label.order)
-
-    # tree with label and size
-    tree.plot = tidytree::full_join(tidytree::as.treedata(tree.phylo), merge(major.labels,
-        nodesize, by = "node"), by = "node")
-
-    # set the order of labels
+    major.labels$major.labels = factor(major.labels$major.labels,
+                                       levels = label.order)
+    tree.plot = tidytree::full_join(tidytree::as.treedata(tree.phylo),
+                                    merge(major.labels, nodesize, by = "node"), by = "node")
     if (!is.null(cols)) {
         if (length(cols) != length(label.order)) {
             warnings("Number of color does not match the number of labels!")
         }
-    } else {
-        cols = gg_color_hue(length(label.order))  # approximate the default color
+    }
+    else {
+        cols = gg_color_hue(length(label.order))
     }
     suppressMessages({
-    # plot the tree
-    gg = ggtree::ggtree(tree.plot, size = 1) + ggtree::layout_dendrogram() + xlim(bottom.margin,
-        -110)
-
-    if (!is.null(flip.branch)) {
-        for (i in 1:length(flip.branch)) {
-            gg = ggtree::flip(tree_view = gg, node1 = which(gg$data$label == flip.branch[[i]][1]),
-                node2 = which(gg$data$label == flip.branch[[i]][2]))
-        }
-    }
-
-    if (show.ref.labels) {
-        gg = gg + ggtree::geom_tippoint(aes(color = major.labels, size = nodesize),
-            stroke = 0) + ggtree::geom_nodepoint(aes(color = major.labels, size = nodesize),
-            stroke = 0) + scale_color_manual(values = cols, labels = label.order,
-            drop = FALSE)
-        if (!is.null(tip.labels)) {
-            if (length(tip.labels) != sum(gg$data$isTip)) {
-                stop("Error: leaf labels of different size with number of leaf: ",
-                  ape::Ntip(tree.phylo), "!")
+        gg = ggtree::ggtree(tree.plot, size = 1) + ggtree::layout_dendrogram() +
+            xlim(bottom.margin, -110)
+        if (!is.null(flip.branch)) {
+            for (i in 1:length(flip.branch)) {
+                gg = ggtree::flip(tree_view = gg, node1 = which(gg$data$label ==
+                                                                    flip.branch[[i]][1]), node2 = which(gg$data$label ==
+                                                                                                            flip.branch[[i]][2]))
             }
-            gg = gg + ggtree::geom_tiplab(aes(x = x + tip.label.dist, label = c(tip.labels[rank(gg$data$y[gg$data$isTip])],
-                rep(NA, sum(!gg$data$isTip)))), angle = 270, color = "black")
-        } else {
-            gg = gg + ggtree::geom_tiplab(aes(x = x + tip.label.dist, label = major.labels),
-                angle = 270, color = "black")
         }
-
-        if (show.branch.labels) {
-            gg = gg + ggtree::geom_nodelab(aes(x = x - 10, label = label), angle = 0,
-                color = "black") + ggtree::geom_tiplab(aes(x = x - 10, label = label),
-                angle = 0, color = "black")
+        if (show.ref.labels) {
+            gg = gg + ggtree::geom_tippoint(aes(color = major.labels,
+                                                size = nodesize), stroke = 0) + ggtree::geom_nodepoint(aes(color = major.labels,
+                                                                                                           size = nodesize), stroke = 0) + scale_color_manual(values = cols,
+                                                                                                                                                              labels = label.order, drop = FALSE)
+            if (!is.null(tip.labels)) {
+                if (length(tip.labels) != sum(gg$data$isTip)) {
+                    stop("Error: leaf labels of different size with number of leaf: ",
+                         ape::Ntip(tree.phylo), "!")
+                }
+                gg = gg + ggtree::geom_tiplab(aes(x = x + tip.label.dist,
+                                                  label = c(tip.labels[rank(gg$data$y[gg$data$isTip])],
+                                                            rep(NA, sum(!gg$data$isTip)))), angle = 270,
+                                              color = "black")
+            }
+            else {
+                gg = gg + ggtree::geom_tiplab(aes(x = x + tip.label.dist,
+                                                  label = major.labels), angle = 270, color = "black")
+            }
+            if (show.branch.labels) {
+                gg = gg + ggtree::geom_nodelab(aes(x = x - branch.label.dist,
+                                                   label = label), angle = 0, color = "black") +
+                    ggtree::geom_tiplab(aes(x = x - branch.label.dist, label = label),
+                                        angle = 0, color = "black")
+            }
+            gg = gg + guides(colour = guide_legend(override.aes = list(size = 5)),
+                             size = FALSE) + labs(color = legend.title)
         }
-        gg = gg + guides(colour = guide_legend(override.aes = list(size = 5)), size = FALSE) +
-            labs(color = legend.title)
-    }
-
-    if (plot.piechart) {
-        requireNamespace("ggimage")
-        pies = ggtree::nodepie(pct, cols = 1:(ncol(pct) - 1), color = cols[order(label.order)])
-        pies = pies[c(issplit, isleaf)]
-        piesize = nodesize$nodesize
-        gg = gg + ggtree::geom_inset(pies, reverse_x = TRUE, height = piesize, width = piesize)
-    }
+        if (plot.piechart) {
+            requireNamespace("ggimage")
+            pies = ggtree::nodepie(pct, cols = 1:(ncol(pct) -
+                                                      1), color = cols[order(label.order)])
+            pies = pies[c(issplit, isleaf)]
+            piesize = nodesize$nodesize
+            gg = gg + ggtree::geom_inset(pies, reverse_x = TRUE,
+                                         height = piesize, width = piesize)
+        }
     })
-
     gg
 }
-
 #' Plot MRtree results as a dendrogram. If reference labels are provided, a pie chart is
 #' shown at each tree node, detailing the label proprotions.
 #'

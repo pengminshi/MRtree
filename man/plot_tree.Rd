@@ -15,6 +15,7 @@ plot_tree(
   tip.labels = NULL,
   tip.label.dist = 4,
   show.branch.labels = FALSE,
+  branch.label.dist = 10,
   flip.branch = NULL,
   legend.title = "",
   bottom.margin = 25
@@ -37,9 +38,11 @@ plot_tree(
 
 \item{tip.labels}{a vector of strings specifying the labels of tree leafs. The labels should align with the order of leaf in the plot.}
 
-\item{tip.label.dist}{distance of the tip labels to the tree tips}
+\item{tip.label.dist}{vertical distance of the tip labels to the tree tips}
 
 \item{show.branch.labels}{boolean, whether to show the branch labels for convenience of flipping branches}
+
+\item{branch.label.dist}{vertical distance from branch node labels to the node}
 
 \item{flip.branch}{a list of vectors each of size 2, indicating the branch labels to flip. Each time two branches are flipped.}
 
