@@ -38,6 +38,7 @@ Imports:
     SymSim
 Depends:
     R (>= 3.6.0)
+biocViews:
 Remotes:
     YosefLab/SymSim
 RoxygenNote: 7.1.1
